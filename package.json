@@ -4,8 +4,8 @@
   "description": "國立高雄大學 志工服務證明書下載系統",
   "main": "server.js",
   "scripts": {
-    "start": "node --no-warnings=ExperimentalWarning server.js",
-    "dev": "node --no-warnings=ExperimentalWarning --watch server.js"
+    "start": "node --experimental-sqlite --no-warnings=ExperimentalWarning server.js",
+    "dev": "node --experimental-sqlite --no-warnings=ExperimentalWarning --watch server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
