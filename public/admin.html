@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>後台管理 — 志工服務證明書系統</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Microsoft JhengHei','微軟正黑體',sans-serif;background:#f0f2f5;color:#333}
+
+/* ── Login ── */
+#loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0d1b2a,#1b3a5c)}
+.login-card{background:#fff;border-radius:16px;padding:40px;width:360px;box-shadow:0 20px 40px rgba(0,0,0,.3);text-align:center}
+.login-card h1{font-size:22px;color:#1b3a5c;margin-bottom:4px}
+.login-card p{font-size:13px;color:#888;margin-bottom:28px}
+.form-group{text-align:left;margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:6px}
+.form-group input{width:100%;padding:11px 14px;border:2px solid #e0e0e0;border-radius:9px;font-size:15px;font-family:inherit;transition:border-color .2s}
+.form-group input:focus{outline:none;border-color:#1b3a5c}
+.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#1b3a5c,#2a6496);color:#fff;border:none;border-radius:9px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.login-btn:hover{opacity:.9}
+.login-error{background:#fff0f0;border:1px solid #ffcdd2;border-radius:8px;padding:10px;color:#c62828;font-size:13px;margin-bottom:14px}
+
+/* ── Layout ── */
+#app{display:none;min-height:100vh;display:none}
+.sidebar{width:220px;background:#1b3a5c;min-height:100vh;position:fixed;top:0;left:0;display:flex;flex-direction:column}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo h2{color:#fff;font-size:17px;margin-bottom:2px}
+.sidebar-logo p{color:rgba(255,255,255,.5);font-size:12px}
+nav{flex:1;padding:12px 0}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:12px 20px;background:none;border:none;color:rgba(255,255,255,.7);font-size:14px;font-family:inherit;cursor:pointer;transition:all .15s;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.15);color:#fff;font-weight:600}
+.nav-item .icon{font-size:18px;width:24px;text-align:center}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1)}
+.user-info{color:rgba(255,255,255,.6);font-size:13px;margin-bottom:10px}
+.user-info strong{color:#fff;display:block}
+.logout-btn{width:100%;padding:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:7px;color:#fff;font-size:13px;cursor:pointer;font-family:inherit}
+.logout-btn:hover{background:rgba(255,255,255,.2)}
+
+.main{margin-left:220px;padding:28px}
+.page-title{font-size:22px;font-weight:700;color:#1b3a5c;margin-bottom:20px}
+
+/* ── Cards / Tables ── */
+.panel{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.panel-header h3{font-size:16px;color:#1b3a5c}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:8px 16px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:#1b3a5c;color:#fff}
+.btn-primary:hover{background:#2a6496}
+.btn-success{background:#1a7f37;color:#fff}
+.btn-success:hover{background:#2da44e}
+.btn-danger{background:#dc3545;color:#fff}
+.btn-danger:hover{background:#c0392b}
+.btn-secondary{background:#e9ecef;color:#444}
+.btn-secondary:hover{background:#dee2e6}
+.btn-sm{padding:5px 10px;font-size:13px}
+table{width:100%;border-collapse:collapse}
+th{background:#f8f9fa;padding:10px 12px;text-align:left;font-size:13px;color:#666;font-weight:600;border-bottom:2px solid #e9ecef}
+td{padding:10px 12px;font-size:14px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafcff}
+.badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:12px;font-weight:600;background:#e8f0fe;color:#1b3a5c}
+.empty-row td{text-align:center;color:#aaa;padding:24px}
+
+/* ── Modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:480px;box-shadow:0 20px 50px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto}
+.modal-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.modal-header h3{font-size:17px;color:#1b3a5c}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#999;line-height:1}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:12px 24px 20px;display:flex;justify-content:flex-end;gap:10px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;transition:border-color .2s}
+.field input:focus,.field select:focus{outline:none;border-color:#1b3a5c}
+.field-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field-note{font-size:12px;color:#888;margin-top:4px}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast-item{padding:12px 18px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .25s ease;max-width:320px}
+.toast-item.success{background:#e8f9e9;color:#1a7f37;border:1px solid #b7dfb9}
+.toast-item.error{background:#fff0f0;color:#c62828;border:1px solid #ffcdd2}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+
+/* ── Enroll search ── */
+.search-box{position:relative}
+.search-box input{padding-right:80px}
+.search-btn{position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:6px 12px;background:#1b3a5c;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer}
+.enroll-select{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.enroll-select select{flex:1;min-width:200px;padding:10px 13px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit}
+.enroll-select select:focus{outline:none;border-color:#1b3a5c}
+
+/* ── Import area ── */
+.import-area{border:2px dashed #c0cfe0;border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s}
+.import-area:hover{border-color:#1b3a5c}
+.import-area p{color:#888;font-size:14px;margin-top:8px}
+.import-format{background:#f8f9fa;border-radius:8px;padding:12px;margin-top:12px;font-size:12px;color:#555}
+.import-format pre{margin-top:4px;font-family:Consolas,monospace;color:#1b3a5c}
+
+/* ── Template ── */
+.template-preview{border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;margin-top:16px;max-height:500px}
+.template-preview embed{width:100%;height:500px}
+
+@media(max-width:768px){.sidebar{width:100%;min-height:auto;position:static;flex-direction:row;flex-wrap:wrap}.main{margin-left:0;padding:16px}.field-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="loginPage">
+  <div class="login-card">
+    <h1>後台管理系統</h1>
+    <p>國立高雄大學理學院科學教育中心</p>
+    <div id="loginError" class="login-error hidden"></div>
+    <div class="form-group"><label>帳號</label><input type="text" id="loginUser" placeholder="admin" autocomplete="username"></div>
+    <div class="form-group"><label>密碼</label><input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="login-btn" id="loginBtn">登入</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h2>後台管理</h2>
+      <p>科學教育中心</p>
+    </div>
+    <nav>
+      <button class="nav-item active" data-tab="activities"><span class="icon">📋</span>活動管理</button>
+      <button class="nav-item" data-tab="students"><span class="icon">👥</span>學生名單</button>
+      <button class="nav-item" data-tab="enrollments"><span class="icon">✅</span>報名管理</button>
+      <button class="nav-item" data-tab="template"><span class="icon">📄</span>模板設定</button>
+      <button class="nav-item" data-tab="password"><span class="icon">🔒</span>修改密碼</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info"><strong id="currentUser"></strong>已登入</div>
+      <button class="logout-btn" id="logoutBtn">登出</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- Activities Tab -->
+    <div id="tab-activities" class="tab-content">
+      <div class="page-title">活動管理</div>
+      <div class="panel">
+        <div class="panel-header">
+          <h3>活動清單</h3>
+          <button class="btn btn-primary" id="addActivityBtn">＋ 新增活動</button>
+        </div>
+        <table id="actTable">
+          <thead><tr><th>活動名稱</th><th>日期</th><th>時數</th><th>角色</th><th>文號</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Students Tab -->
+    <div id="tab-students" class="tab-content hidden">
+      <div class="page-title">學生名單</div>
+      <div class="panel">
+        <div class="panel-header">
+          <h3>學生資料</h3>
+          <div class="btn-group">
+            <button class="btn btn-secondary" id="importStudentBtn">⬆ 匯入 CSV</button>
+            <button class="btn btn-primary" id="addStudentBtn">＋ 新增學生</button>
+          </div>
+        </div>
+        <div class="import-format" id="studentImportHint" style="margin-bottom:16px;display:none">
+          <strong>CSV 格式（第一行為標題）：</strong>
+          <pre>學號,姓名,學校
+311201,王小明,國立鳳山高級中學
+311202,李小花,國立鳳山高級中學</pre>
+        </div>
+        <table id="stuTable">
+          <thead><tr><th>學號</th><th>姓名</th><th>學校</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Enrollments Tab -->
+    <div id="tab-enrollments" class="tab-content hidden">
+      <div class="page-title">報名管理</div>
+      <div class="panel">
+        <div class="panel-header"><h3>選擇活動</h3></div>
+        <div class="enroll-select">
+          <select id="enrollActSel"><option value="">— 請選擇活動 —</option></select>
+          <button class="btn btn-secondary" id="importEnrollBtn">⬆ 批次匯入 CSV</button>
+        </div>
+        <div class="import-format" id="enrollImportHint" style="margin-bottom:16px;display:none">
+          <strong>CSV 格式：</strong>
+          <pre>學號,活動名稱
+311201,高雄科學日暨國立高雄大學 USR 成果展
+311202,高雄科學日暨國立高雄大學 USR 成果展</pre>
+        </div>
+      </div>
+      <div class="panel" id="enrollPanel" style="display:none">
+        <div class="panel-header">
+          <h3 id="enrollPanelTitle">已報名學生</h3>
+          <div class="btn-group">
+            <div class="search-box">
+              <input type="text" id="addEnrollId" placeholder="輸入學號新增" style="width:220px">
+              <button class="search-btn" id="addEnrollBtn">新增</button>
+            </div>
+          </div>
+        </div>
+        <table id="enrollTable">
+          <thead><tr><th>學號</th><th>姓名</th><th>學校</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Template Tab -->
+    <div id="tab-template" class="tab-content hidden">
+      <div class="page-title">模板設定</div>
+      <div class="panel">
+        <div class="panel-header"><h3>上傳新模板</h3></div>
+        <p style="color:#666;font-size:14px;margin-bottom:16px">上傳後將取代目前的證明書模板，請確保為空白版本（不含學生姓名等動態資料）。</p>
+        <label class="import-area" id="templateDrop">
+          <input type="file" id="templateFile" accept=".pdf" style="display:none">
+          <div style="font-size:36px">📄</div>
+          <p>點擊或拖曳上傳 PDF 模板</p>
+        </label>
+        <div class="template-preview" id="templatePreview">
+          <embed src="/template.pdf#toolbar=0" type="application/pdf">
+        </div>
+      </div>
+    </div>
+
+    <!-- Password Tab -->
+    <div id="tab-password" class="tab-content hidden">
+      <div class="page-title">修改密碼</div>
+      <div class="panel" style="max-width:400px">
+        <div class="field"><label>目前密碼</label><input type="password" id="curPass"></div>
+        <div class="field"><label>新密碼</label><input type="password" id="newPass"></div>
+        <div class="field"><label>確認新密碼</label><input type="password" id="confirmPass"></div>
+        <button class="btn btn-primary" id="changePassBtn">儲存新密碼</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Activity Modal -->
+<div class="overlay hidden" id="actModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="actModalTitle">新增活動</h3>
+      <button class="modal-close" data-close="actModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>活動名稱</label><input id="actName" placeholder="例：高雄科學日暨國立高雄大學 USR 成果展"></div>
+      <div class="field-row">
+        <div class="field"><label>民國年份</label><input id="actYear" type="number" placeholder="114" min="100" max="200"></div>
+        <div class="field"><label>月</label><input id="actMonth" type="number" placeholder="12" min="1" max="12"></div>
+        <div class="field"><label>日</label><input id="actDay" type="number" placeholder="13" min="1" max="31"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>服務時數</label><input id="actHours" type="number" placeholder="4" step="0.5" min="0.5"></div>
+        <div class="field" style="grid-column:span 2"><label>服務角色</label><input id="actRole" placeholder="攤位志工"></div>
+      </div>
+      <div class="field"><label>文號（選填）</label><input id="actDocNum" placeholder="11412130197"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="actModal">取消</button>
+      <button class="btn btn-primary" id="saveActivityBtn">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Student Modal -->
+<div class="overlay hidden" id="stuModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="stuModalTitle">新增學生</h3>
+      <button class="modal-close" data-close="stuModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>學號</label><input id="stuId" placeholder="311201"></div>
+      <div class="field"><label>姓名</label><input id="stuName" placeholder="王小明"></div>
+      <div class="field"><label>學校名稱</label><input id="stuSchool" placeholder="國立鳳山高級中學"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="stuModal">取消</button>
+      <button class="btn btn-primary" id="saveStuBtn">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV Import Modal -->
+<div class="overlay hidden" id="csvModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="csvModalTitle">匯入 CSV</h3>
+      <button class="modal-close" data-close="csvModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="csvFormatHint"></div>
+      <label class="import-area" id="csvDrop" style="margin-top:12px">
+        <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
+        <div style="font-size:36px">📊</div>
+        <p>點擊選擇或拖曳 CSV 檔案</p>
+      </label>
+      <p id="csvFileName" style="text-align:center;font-size:13px;color:#1b3a5c;margin-top:8px"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="csvModal">取消</button>
+      <button class="btn btn-primary" id="uploadCsvBtn">匯入</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── Auth ────────────────────────────────────────────────────────
+let TOKEN = localStorage.getItem('admin_token');
+let USERNAME = localStorage.getItem('admin_user');
+
+function setToken(t, u) { TOKEN = t; USERNAME = u; localStorage.setItem('admin_token', t); localStorage.setItem('admin_user', u); }
+function clearToken()    { TOKEN = null; localStorage.removeItem('admin_token'); localStorage.removeItem('admin_user'); }
+
+async function api(method, path, body, isForm) {
+  const opts = { method, headers: { 'Authorization': `Bearer ${TOKEN}` } };
+  if (body && !isForm) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  if (isForm) opts.body = body;
+  const res = await fetch(path, opts);
+  if (res.status === 401) { clearToken(); location.reload(); }
+  return res;
+}
+
+// ── Bootstrap ────────────────────────────────────────────────────
+if (TOKEN) showApp();
+
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPass').addEventListener('keydown', e => e.key === 'Enter' && doLogin());
+document.getElementById('logoutBtn').addEventListener('click', () => { clearToken(); location.reload(); });
+
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.classList.add('hidden');
+
+  const res = await fetch('/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (!res.ok) { errEl.textContent = data.error; errEl.classList.remove('hidden'); return; }
+  setToken(data.token, data.username);
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('currentUser').textContent = USERNAME || '';
+  loadActivities();
+  loadStudents();
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+    btn.classList.add('active');
+    const tab = document.getElementById('tab-' + btn.dataset.tab);
+    if (tab) tab.classList.remove('hidden');
+    if (btn.dataset.tab === 'enrollments') populateEnrollActSel();
+  });
+});
+
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const el = document.createElement('div');
+  el.className = `toast-item ${type}`;
+  el.textContent = msg;
+  t.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Modals ─────────────────────────────────────────────────────────
+document.querySelectorAll('[data-close]').forEach(b => {
+  b.addEventListener('click', () => document.getElementById(b.dataset.close).classList.add('hidden'));
+});
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.add('hidden'); });
+});
+
+// ── Activities ────────────────────────────────────────────────────
+let activities = [];
+let editActId = null;
+
+async function loadActivities() {
+  const res = await api('GET', '/api/admin/activities');
+  activities = await res.json();
+  renderActTable();
+}
+
+function renderActTable() {
+  const tbody = document.querySelector('#actTable tbody');
+  if (!activities.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">尚無活動，請點擊「新增活動」</td></tr>';
+    return;
+  }
+  tbody.innerHTML = activities.map(a => `
+    <tr>
+      <td>${a.name}</td>
+      <td>民國 ${a.year} 年 ${a.month} 月 ${a.day} 日</td>
+      <td><span class="badge">${a.hours} 小時</span></td>
+      <td>${a.role}</td>
+      <td style="font-size:12px;color:#888">${a.doc_number || '—'}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="openEditAct(${a.id})">編輯</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAct(${a.id})" style="margin-left:4px">刪除</button>
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('addActivityBtn').addEventListener('click', () => {
+  editActId = null;
+  document.getElementById('actModalTitle').textContent = '新增活動';
+  ['actName','actYear','actMonth','actDay','actHours','actRole','actDocNum'].forEach(id => {
+    document.getElementById(id).value = id === 'actRole' ? '攤位志工' : '';
+  });
+  document.getElementById('actModal').classList.remove('hidden');
+});
+
+function openEditAct(id) {
+  editActId = id;
+  const a = activities.find(x => x.id === id);
+  document.getElementById('actModalTitle').textContent = '編輯活動';
+  document.getElementById('actName').value    = a.name;
+  document.getElementById('actYear').value    = a.year;
+  document.getElementById('actMonth').value   = a.month;
+  document.getElementById('actDay').value     = a.day;
+  document.getElementById('actHours').value   = a.hours;
+  document.getElementById('actRole').value    = a.role;
+  document.getElementById('actDocNum').value  = a.doc_number || '';
+  document.getElementById('actModal').classList.remove('hidden');
+}
+
+document.getElementById('saveActivityBtn').addEventListener('click', async () => {
+  const body = {
+    name: document.getElementById('actName').value.trim(),
+    year: +document.getElementById('actYear').value,
+    month: +document.getElementById('actMonth').value,
+    day: +document.getElementById('actDay').value,
+    hours: +document.getElementById('actHours').value,
+    role: document.getElementById('actRole').value.trim() || '攤位志工',
+    doc_number: document.getElementById('actDocNum').value.trim() || null
+  };
+  if (!body.name || !body.year || !body.month || !body.day || !body.hours) {
+    toast('請填寫所有必填欄位', 'error'); return;
+  }
+  const res = editActId
+    ? await api('PUT',  `/api/admin/activities/${editActId}`, body)
+    : await api('POST', '/api/admin/activities', body);
+  if (res.ok) {
+    toast(editActId ? '活動已更新' : '活動已新增');
+    document.getElementById('actModal').classList.add('hidden');
+    loadActivities();
+  } else {
+    const d = await res.json(); toast(d.error, 'error');
+  }
+});
+
+async function deleteAct(id) {
+  if (!confirm('確定要刪除此活動？相關報名紀錄也會一併刪除。')) return;
+  await api('DELETE', `/api/admin/activities/${id}`);
+  toast('活動已刪除');
+  loadActivities();
+}
+
+// ── Students ──────────────────────────────────────────────────────
+let students = [];
+let editStuId = null;
+
+async function loadStudents() {
+  const res = await api('GET', '/api/admin/students');
+  students = await res.json();
+  renderStuTable();
+}
+
+function renderStuTable() {
+  const tbody = document.querySelector('#stuTable tbody');
+  if (!students.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">尚無學生，請新增或匯入 CSV</td></tr>';
+    return;
+  }
+  tbody.innerHTML = students.map(s => `
+    <tr>
+      <td>${s.student_id}</td>
+      <td>${s.name}</td>
+      <td>${s.school}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="openEditStu('${s.student_id}')">編輯</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStu('${s.student_id}')" style="margin-left:4px">刪除</button>
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('addStudentBtn').addEventListener('click', () => {
+  editStuId = null;
+  document.getElementById('stuModalTitle').textContent = '新增學生';
+  ['stuId','stuName','stuSchool'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('stuId').disabled = false;
+  document.getElementById('stuModal').classList.remove('hidden');
+});
+
+function openEditStu(id) {
+  editStuId = id;
+  const s = students.find(x => x.student_id === id);
+  document.getElementById('stuModalTitle').textContent = '編輯學生';
+  document.getElementById('stuId').value = s.student_id;
+  document.getElementById('stuId').disabled = true;
+  document.getElementById('stuName').value   = s.name;
+  document.getElementById('stuSchool').value = s.school;
+  document.getElementById('stuModal').classList.remove('hidden');
+}
+
+document.getElementById('saveStuBtn').addEventListener('click', async () => {
+  const body = {
+    student_id: document.getElementById('stuId').value.trim(),
+    name: document.getElementById('stuName').value.trim(),
+    school: document.getElementById('stuSchool').value.trim()
+  };
+  if (!body.student_id || !body.name || !body.school) { toast('請填寫所有欄位','error'); return; }
+  const res = editStuId
+    ? await api('PUT',  `/api/admin/students/${editStuId}`, body)
+    : await api('POST', '/api/admin/students', body);
+  if (res.ok) {
+    toast(editStuId ? '學生資料已更新' : '學生已新增');
+    document.getElementById('stuModal').classList.add('hidden');
+    loadStudents();
+  } else {
+    const d = await res.json(); toast(d.error, 'error');
+  }
+});
+
+async function deleteStu(id) {
+  if (!confirm(`確定要刪除學號 ${id}？`)) return;
+  await api('DELETE', `/api/admin/students/${id}`);
+  toast('學生已刪除');
+  loadStudents();
+}
+
+// ── CSV Import ─────────────────────────────────────────────────────
+let csvMode = null; // 'students' | 'enrollments'
+
+document.getElementById('importStudentBtn').addEventListener('click', () => {
+  csvMode = 'students';
+  document.getElementById('csvModalTitle').textContent = '匯入學生名單';
+  document.getElementById('csvFormatHint').innerHTML = `
+    <div class="import-format"><strong>CSV 格式（支援中文欄位名）：</strong>
+    <pre>學號,姓名,學校\n311201,王小明,國立鳳山高級中學</pre></div>`;
+  document.getElementById('csvFile').value = '';
+  document.getElementById('csvFileName').textContent = '';
+  document.getElementById('csvModal').classList.remove('hidden');
+});
+
+document.getElementById('importEnrollBtn').addEventListener('click', () => {
+  csvMode = 'enrollments';
+  document.getElementById('csvModalTitle').textContent = '批次匯入報名';
+  document.getElementById('csvFormatHint').innerHTML = `
+    <div class="import-format"><strong>CSV 格式：</strong>
+    <pre>學號,活動名稱\n311201,高雄科學日暨國立高雄大學 USR 成果展</pre></div>`;
+  document.getElementById('csvFile').value = '';
+  document.getElementById('csvFileName').textContent = '';
+  document.getElementById('csvModal').classList.remove('hidden');
+});
+
+document.getElementById('csvFile').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (f) document.getElementById('csvFileName').textContent = `已選擇：${f.name}`;
+});
+
+document.getElementById('uploadCsvBtn').addEventListener('click', async () => {
+  const file = document.getElementById('csvFile').files[0];
+  if (!file) { toast('請先選擇 CSV 檔案','error'); return; }
+  const form = new FormData();
+  form.append('file', file);
+  const url = csvMode === 'students' ? '/api/admin/students/import' : '/api/admin/enrollments/import';
+  const res = await api('POST', url, form, true);
+  const data = await res.json();
+  if (res.ok) {
+    toast(`匯入完成：新增 ${data.inserted} 筆，略過 ${data.skipped} 筆`);
+    document.getElementById('csvModal').classList.add('hidden');
+    if (csvMode === 'students') loadStudents();
+    else loadEnrollments();
+  } else {
+    toast(data.error, 'error');
+  }
+});
+
+// ── Enrollments ───────────────────────────────────────────────────
+let enrollActId = null;
+
+function populateEnrollActSel() {
+  const sel = document.getElementById('enrollActSel');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 請選擇活動 —</option>';
+  activities.forEach(a => {
+    const o = document.createElement('option');
+    o.value = a.id;
+    o.textContent = `${a.name}（民國${a.year}年${a.month}月${a.day}日）`;
+    sel.appendChild(o);
+  });
+  if (cur) sel.value = cur;
+}
+
+document.getElementById('enrollActSel').addEventListener('change', async () => {
+  const id = document.getElementById('enrollActSel').value;
+  enrollActId = id || null;
+  if (!id) { document.getElementById('enrollPanel').style.display = 'none'; return; }
+  const act = activities.find(a => a.id == id);
+  document.getElementById('enrollPanelTitle').textContent = `已報名學生：${act?.name}`;
+  document.getElementById('enrollPanel').style.display = 'block';
+  loadEnrollments();
+});
+
+async function loadEnrollments() {
+  if (!enrollActId) return;
+  const res = await api('GET', `/api/admin/enrollments/${enrollActId}`);
+  const enrolled = await res.json();
+  renderEnrollTable(enrolled);
+}
+
+function renderEnrollTable(rows) {
+  const tbody = document.querySelector('#enrollTable tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">尚無報名學生</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(s => `
+    <tr>
+      <td>${s.student_id}</td>
+      <td>${s.name}</td>
+      <td>${s.school}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="removeEnroll('${s.student_id}')">移除</button></td>
+    </tr>`).join('');
+}
+
+document.getElementById('addEnrollBtn').addEventListener('click', async () => {
+  const sid = document.getElementById('addEnrollId').value.trim();
+  if (!sid || !enrollActId) return;
+  const res = await api('POST', '/api/admin/enrollments', { student_id: sid, activity_id: +enrollActId });
+  if (res.ok) {
+    toast('學生已加入報名');
+    document.getElementById('addEnrollId').value = '';
+    loadEnrollments();
+  } else {
+    const d = await res.json(); toast(d.error || '新增失敗', 'error');
+  }
+});
+
+async function removeEnroll(sid) {
+  if (!confirm(`確定移除學號 ${sid}？`)) return;
+  await api('DELETE', '/api/admin/enrollments', { student_id: sid, activity_id: +enrollActId });
+  toast('已移除');
+  loadEnrollments();
+}
+
+// ── Template ───────────────────────────────────────────────────────
+document.getElementById('templateDrop').addEventListener('click', () =>
+  document.getElementById('templateFile').click()
+);
+
+document.getElementById('templateFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append('template', file);
+  const res = await api('POST', '/api/admin/template', form, true);
+  if (res.ok) {
+    toast('模板已更新');
+    document.getElementById('templatePreview').innerHTML =
+      `<embed src="/template.pdf?t=${Date.now()}#toolbar=0" type="application/pdf">`;
+  } else {
+    const d = await res.json(); toast(d.error, 'error');
+  }
+});
+
+// ── Password ───────────────────────────────────────────────────────
+document.getElementById('changePassBtn').addEventListener('click', async () => {
+  const current = document.getElementById('curPass').value;
+  const next    = document.getElementById('newPass').value;
+  const confirm = document.getElementById('confirmPass').value;
+  if (next !== confirm) { toast('兩次密碼不一致','error'); return; }
+  if (next.length < 6)  { toast('新密碼至少 6 個字元','error'); return; }
+  const res = await api('PUT', '/api/admin/password', { current, next });
+  if (res.ok) {
+    toast('密碼已更新，請重新登入');
+    setTimeout(() => { clearToken(); location.reload(); }, 1500);
+  } else {
+    const d = await res.json(); toast(d.error, 'error');
+  }
+});
+</script>
+</body>
+</html>
