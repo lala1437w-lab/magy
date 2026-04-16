@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>志工服務證明書下載系統 — 國立高雄大學理學院科學教育中心</title>
+
+    <!-- PDF.js：渲染模板 PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- jsPDF：產出最終 PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- 中文字型備援 -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&display=swap">
+
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+
+        body{
+            font-family:'Microsoft JhengHei','微軟正黑體','Noto Sans TC',sans-serif;
+            background:linear-gradient(135deg,#0d1b2a 0%,#1b3a5c 50%,#0d1b2a 100%);
+            min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;
+        }
+
+        .container{
+            background:#fff;border-radius:20px;padding:40px 36px;
+            max-width:500px;width:100%;box-shadow:0 30px 60px rgba(0,0,0,.35);
+        }
+
+        /* ── Header ── */
+        .header{text-align:center;margin-bottom:28px}
+        .header h1{font-size:26px;color:#1b3a5c;margin-bottom:4px}
+        .header .subtitle{font-size:14px;color:#888;letter-spacing:1px}
+        .divider{height:3px;background:linear-gradient(90deg,transparent,#1b3a5c,transparent);border:none;margin:0 40px 26px;border-radius:2px}
+
+        /* ── Form ── */
+        .form-group{margin-bottom:18px}
+        label{display:block;font-size:14px;font-weight:600;color:#444;margin-bottom:6px}
+
+        input,select{
+            width:100%;padding:12px 14px;border:2px solid #e2e2e2;border-radius:10px;
+            font-size:16px;font-family:inherit;transition:border-color .2s,box-shadow .2s;background:#fafafa;
+        }
+        select{
+            appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:36px;
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat:no-repeat;background-position:right 14px center;
+        }
+        input:focus,select:focus{outline:none;border-color:#1b3a5c;box-shadow:0 0 0 3px rgba(27,58,92,.12);background:#fff}
+
+        /* ── Activity info card ── */
+        .activity-info{
+            background:#f4f7fb;border-radius:10px;padding:14px 16px;margin-top:10px;border:1px solid #e2e8f0;
+        }
+        .info-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px}
+        .info-label{color:#777}
+        .info-value{color:#1b3a5c;font-weight:600}
+
+        /* ── Buttons ── */
+        .btn{
+            width:100%;padding:15px;border:none;border-radius:12px;
+            font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .25s;margin-top:10px;
+        }
+        .btn-primary{background:linear-gradient(135deg,#1b3a5c,#2a6496);color:#fff}
+        .btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 25px rgba(27,58,92,.35)}
+        .btn-primary:disabled{opacity:.6;cursor:not-allowed}
+        .btn-success{background:linear-gradient(135deg,#1a7f37,#2da44e);color:#fff}
+        .btn-success:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(45,164,78,.35)}
+
+        /* ── Preview ── */
+        .preview-section{margin-top:24px;text-align:center}
+        .preview-section h3{font-size:16px;color:#444;margin-bottom:12px}
+        #previewCanvas{width:100%;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+
+        /* ── Misc ── */
+        .hidden{display:none!important}
+        .spinner{
+            display:inline-block;width:20px;height:20px;
+            border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;
+            animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px;
+        }
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .footer{text-align:center;margin-top:24px;font-size:12px;color:#aaa}
+
+        @media(max-width:540px){
+            .container{padding:28px 20px}
+            .header h1{font-size:22px}
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>志工服務證明書</h1>
+        <p class="subtitle">國立高雄大學理學院 科學教育中心</p>
+    </div>
+    <hr class="divider">
+
+    <form id="certForm">
+        <div class="form-group">
+            <label for="school">學校名稱</label>
+            <input type="text" id="school" required placeholder="例：國立鳳山高級中學">
+        </div>
+        <div class="form-group">
+            <label for="studentName">姓名</label>
+            <input type="text" id="studentName" required placeholder="請輸入姓名">
+        </div>
+        <div class="form-group">
+            <label for="studentId">學號</label>
+            <input type="text" id="studentId" required placeholder="請輸入學號">
+        </div>
+        <div class="form-group">
+            <label for="activity">選擇活動</label>
+            <select id="activity" required>
+                <option value="">— 請選擇活動 —</option>
+            </select>
+            <div id="activityInfo" class="activity-info hidden">
+                <div class="info-row">
+                    <span class="info-label">活動日期</span>
+                    <span id="actDate" class="info-value"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">服務類型</span>
+                    <span id="actRole" class="info-value"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">服務時數</span>
+                    <span id="actHours" class="info-value"></span>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span id="btnText">產生證明書</span>
+            <span id="btnLoading" class="hidden"><span class="spinner"></span>產生中…</span>
+        </button>
+    </form>
+
+    <div id="previewSection" class="preview-section hidden">
+        <h3>證明書預覽</h3>
+        <canvas id="previewCanvas"></canvas>
+        <button class="btn btn-success" id="downloadBtn" style="margin-top:14px">
+            下載 PDF
+        </button>
+    </div>
+
+    <div class="footer">國立高雄大學理學院科學教育中心</div>
+</div>
+
+<script>
+// ================================================================
+//  PDF.js 設定
+// ================================================================
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ================================================================
+//  【管理員設定區】活動清單
+//  ➜ 新增/修改活動請編輯這個陣列
+// ================================================================
+const ACTIVITIES = [
+  {
+    name: '高雄科學日暨國立高雄大學 USR 成果展',
+    role: '攤位志工',
+    year: 114, month: 12, day: 13,
+    hours: 4,
+    docNumber: '11412130197'
+  },
+  {
+    name: '科學探索營',
+    role: '教學助理志工',
+    year: 115, month: 3, day: 15,
+    hours: 6,
+    docNumber: '11503150001'
+  },
+  {
+    name: '理學院科普推廣活動',
+    role: '活動志工',
+    year: 115, month: 4, day: 20,
+    hours: 3,
+    docNumber: '11504200001'
+  }
+];
+
+// ================================================================
+//  【管理員設定區】模板座標配置
+//  座標皆為頁面寬/高的比例值 (0~1)
+//  如果換了新的空白模板，請移除 WHITEOUT 或將其設為空陣列 []
+// ================================================================
+const TEMPLATE_PDF = 'template.pdf';
+const RENDER_SCALE = 2;            // 渲染倍率 (建議正式環境改為 3 或 4 以提升品質)
+const FONT_FAMILY  = '"標楷體","DFKai-SB","Noto Serif TC","BiauKai","Kaiti TC",serif';
+
+// 白色遮蓋區域 — 蓋住範本中原本已填的範例文字
+// 如果你的模板本身就是空白的，把這個陣列清空即可
+const WHITEOUT = [
+  { x: 0.62, y: 0.212, w: 0.33, h: 0.026 },  // 文號 (pdf_y=649.5, 11pt)
+  { x: 0.07, y: 0.296, w: 0.86, h: 0.038 },  // 姓名行 (pdf_y=570.3, 20pt)
+  { x: 0.07, y: 0.349, w: 0.86, h: 0.038 },  // 日期行 (pdf_y=525.3, 20pt)
+  { x: 0.07, y: 0.402, w: 0.86, h: 0.038 },  // 活動行 (pdf_y=480.3, 20pt)
+  { x: 0.07, y: 0.456, w: 0.86, h: 0.038 },  // 時數行 (pdf_y=435.3, 20pt)
+  { x: 0.07, y: 0.862, w: 0.86, h: 0.044 }   // 底部日期 (pdf_y=90.5, 24pt)
+];
+
+// 新文字位置 — 根據 pdf.js textContent 精確計算
+// pt = 原始 PDF 字型大小
+const TEXTS = {
+  docNumber:    { x: 0.642, y: 0.218, pt: 11 },
+  nameLine:     { x: 0.140, y: 0.304, pt: 20 },
+  dateLine:     { x: 0.140, y: 0.357, pt: 20 },
+  activityLine: { x: 0.140, y: 0.410, pt: 20 },
+  hoursLine:    { x: 0.140, y: 0.464, pt: 20 },
+  bottomDate:   { x: 0.50,  y: 0.870, pt: 24, align: 'center' }
+};
+
+// ================================================================
+//  初始化 UI
+// ================================================================
+const form           = document.getElementById('certForm');
+const activitySelect = document.getElementById('activity');
+const activityInfo   = document.getElementById('activityInfo');
+const submitBtn      = document.getElementById('submitBtn');
+const previewSection = document.getElementById('previewSection');
+const previewCanvas  = document.getElementById('previewCanvas');
+const downloadBtn    = document.getElementById('downloadBtn');
+
+let lastData = null;   // 暫存最後產生的資料 (供下載用)
+
+// 填入活動下拉選單
+ACTIVITIES.forEach((act, i) => {
+  const opt = document.createElement('option');
+  opt.value = i;
+  opt.textContent = act.name;
+  activitySelect.appendChild(opt);
+});
+
+// 選擇活動 → 顯示詳情
+activitySelect.addEventListener('change', () => {
+  const idx = activitySelect.value;
+  if (idx === '') { activityInfo.classList.add('hidden'); return; }
+  const a = ACTIVITIES[idx];
+  document.getElementById('actDate').textContent  = `中華民國 ${a.year} 年 ${a.month} 月 ${a.day} 日`;
+  document.getElementById('actRole').textContent   = a.role;
+  document.getElementById('actHours').textContent  = `${a.hours} 小時`;
+  activityInfo.classList.remove('hidden');
+});
+
+// 表單送出 → 產生預覽
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const school    = document.getElementById('school').value.trim();
+  const name      = document.getElementById('studentName').value.trim();
+  const studentId = document.getElementById('studentId').value.trim();
+  const actIdx    = activitySelect.value;
+
+  if (!school || !name || !studentId || actIdx === '') {
+    alert('請填寫所有欄位並選擇活動'); return;
+  }
+
+  setLoading(true);
+  try {
+    const activity = ACTIVITIES[actIdx];
+    await renderCertificate({ school, name, studentId, activity }, previewCanvas);
+    previewSection.classList.remove('hidden');
+    previewCanvas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    lastData = { name };
+  } catch (err) {
+    console.error(err);
+    alert('產生證明書失敗。\n請確認 template.pdf 與此頁面在同一目錄，並透過 HTTP 伺服器開啟（不可用 file:// 協定）。\n\n' + err.message);
+  } finally {
+    setLoading(false);
+  }
+});
+
+// 下載 PDF
+downloadBtn.addEventListener('click', () => {
+  if (!lastData) return;
+  downloadPDF(previewCanvas, lastData.name);
+});
+
+// ================================================================
+//  核心：渲染證明書到 Canvas
+// ================================================================
+async function renderCertificate(data, targetCanvas) {
+  await document.fonts.ready;
+
+  const pdf  = await pdfjsLib.getDocument(TEMPLATE_PDF).promise;
+  const page = await pdf.getPage(1);
+  const vp   = page.getViewport({ scale: RENDER_SCALE });
+
+  // 離屏 canvas
+  const off = document.createElement('canvas');
+  off.width  = vp.width;
+  off.height = vp.height;
+  const ctx  = off.getContext('2d');
+
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+  const W = off.width, H = off.height;
+
+  // 白色遮蓋
+  ctx.fillStyle = '#FFFFFF';
+  for (const r of WHITEOUT) {
+    ctx.fillRect(r.x * W, r.y * H, r.w * W, r.h * H);
+  }
+
+  // 繪製新文字
+  ctx.fillStyle    = '#000000';
+  ctx.textBaseline = 'top';
+
+  const { school, name, activity } = data;
+
+  draw(ctx, W, H, 'docNumber',    `科教謝字第 ${activity.docNumber} 號`);
+  draw(ctx, W, H, 'nameLine',     `${school}　${name}　同學`);
+  draw(ctx, W, H, 'dateLine',     `於中華民國 ${activity.year} 年 ${activity.month} 月 ${activity.day} 日`);
+  draw(ctx, W, H, 'activityLine', `擔任「${activity.name}」`);
+  draw(ctx, W, H, 'hoursLine',    `${activity.role}，服務時數合計 ${activity.hours} 小時，特此證明。`);
+  draw(ctx, W, H, 'bottomDate',   fmtBottomDate(activity.year, activity.month, activity.day));
+
+  // 輸出到預覽 canvas
+  targetCanvas.width  = W;
+  targetCanvas.height = H;
+  targetCanvas.getContext('2d').drawImage(off, 0, 0);
+}
+
+function draw(ctx, W, H, key, text) {
+  const c = TEXTS[key];
+  ctx.font      = `${c.pt * RENDER_SCALE}px ${FONT_FAMILY}`;
+  ctx.textAlign  = c.align || 'left';
+  ctx.fillText(text, c.x * W, c.y * H);
+  ctx.textAlign  = 'left';
+}
+
+function fmtBottomDate(y, m, d) {
+  const ys = String(y).split('').join(' ');
+  const ms = String(m).split('').join(' ');
+  const ds = String(d).split('').join(' ');
+  return `中 華 民 國  ${ys}  年  ${ms}  月  ${ds}  日`;
+}
+
+// ================================================================
+//  PDF 下載
+// ================================================================
+function downloadPDF(canvas, studentName) {
+  const imgData = canvas.toDataURL('image/jpeg', 0.92);
+  const mmW = (canvas.width  / RENDER_SCALE) * 25.4 / 72;
+  const mmH = (canvas.height / RENDER_SCALE) * 25.4 / 72;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: mmW > mmH ? 'l' : 'p',
+    unit: 'mm',
+    format: [mmW, mmH]
+  });
+  doc.addImage(imgData, 'JPEG', 0, 0, mmW, mmH);
+  doc.save(`志工服務證明書_${studentName}.pdf`);
+}
+
+// ================================================================
+//  UI 輔助
+// ================================================================
+function setLoading(on) {
+  submitBtn.disabled = on;
+  document.getElementById('btnText').classList.toggle('hidden', on);
+  document.getElementById('btnLoading').classList.toggle('hidden', !on);
+}
+</script>
+</body>
+</html>
