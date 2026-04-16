@@ -13,9 +13,13 @@ const SECRET = process.env.JWT_SECRET || 'change-me-before-production';
 
 // ── Database ────────────────────────────────────────────────────────────────
 
-fs.mkdirSync('uploads', { recursive: true });
+// Support Railway persistent volume: mount /data and set DB_PATH=/data/magy.db
+const DATA_DIR = process.env.DATA_DIR || '.';
+fs.mkdirSync(DATA_DIR,   { recursive: true });
+fs.mkdirSync('uploads',  { recursive: true });
 
-const db = new DatabaseSync(process.env.DB_PATH || 'magy.db');
+const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'magy.db');
+const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA foreign_keys = ON');
 
