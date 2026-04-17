@@ -185,7 +185,7 @@ tr:hover td{background:#fafcff}
             </div>
           </div>
           <table id="certTable">
-            <thead><tr><th>流水編號</th><th>文號</th><th>學號</th><th>姓名</th><th>學校</th><th>操作</th></tr></thead>
+            <thead><tr><th>流水編號</th><th>文號</th><th>姓名</th><th>學校</th><th>身分證後4碼</th><th>操作</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -321,9 +321,11 @@ tr:hover td{background:#fafcff}
       <button class="modal-close" data-close="certModal">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field"><label>學號</label><input id="certSid" placeholder="311201"></div>
       <div class="field"><label>姓名</label><input id="certName" placeholder="王小明"></div>
       <div class="field"><label>學校</label><input id="certSchool" placeholder="國立鳳山高級中學"></div>
+      <div class="field"><label>身分證字號後4碼（選填）</label><input id="certIdLast4" placeholder="1234" maxlength="10">
+        <div class="field-note">若同姓名有兩位以上，請填寫後4碼以利區別；學生端查詢時也可用此查詢</div>
+      </div>
       <div class="field"><label>流水編號</label><input id="certSerial" placeholder="001">
         <div class="field-note">將與活動的文號前綴組合為完整文號</div>
       </div>
@@ -343,10 +345,16 @@ tr:hover td{background:#fafcff}
       <button class="modal-close" data-close="csvModal">✕</button>
     </div>
     <div class="modal-body">
-      <div class="import-format"><strong>CSV 格式（第一行為標題，流水編號可省略，系統會自動遞增）：</strong>
-<pre>學號,姓名,學校,流水編號
-311201,王小明,國立鳳山高級中學,001
-311202,李小花,國立鳳山高級中學,002</pre></div>
+      <div class="import-format"><strong>CSV 格式（第一行為標題，UTF-8 編碼）：</strong>
+<pre>姓名,學校,身分證後4碼,流水編號
+王小明,國立鳳山高級中學,1234,001
+李小花,國立鳳山高級中學,5678,002</pre>
+        <div style="margin-top:8px;color:#666;line-height:1.7">
+          • <b>姓名、學校</b>為必填<br>
+          • <b>身分證後4碼</b>可省略（同姓名時建議填寫，學生可用此查詢）<br>
+          • <b>流水編號</b>可省略，系統會自動從最大編號接續（例：001、002…）
+        </div>
+      </div>
       <label class="import-area" style="margin-top:12px">
         <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
         <div style="font-size:30px">📊</div>
@@ -611,9 +619,9 @@ function renderCertTable() {
     <tr>
       <td style="font-weight:600">${escapeHtml(c.serial_number)}</td>
       <td style="font-size:13px;color:#555">${escapeHtml(currentActivity.doc_prefix)}第${escapeHtml(c.serial_number)}號</td>
-      <td>${escapeHtml(c.student_id)}</td>
       <td>${escapeHtml(c.name)}</td>
       <td>${escapeHtml(c.school)}</td>
+      <td style="font-size:13px;color:#555">${escapeHtml(c.id_last4 || '—')}</td>
       <td>
         <button class="btn btn-secondary btn-sm" onclick="openEditCert(${c.id})">編輯</button>
         <button class="btn btn-danger btn-sm" onclick="deleteCert(${c.id})">刪除</button>
@@ -624,9 +632,9 @@ function renderCertTable() {
 document.getElementById('addCertBtn').addEventListener('click', () => {
   editCertId = null;
   document.getElementById('certModalTitle').textContent = '新增證書';
-  document.getElementById('certSid').value = '';
-  document.getElementById('certName').value = '';
-  document.getElementById('certSchool').value = '';
+  document.getElementById('certName').value    = '';
+  document.getElementById('certSchool').value  = '';
+  document.getElementById('certIdLast4').value = '';
   // Auto-suggest next serial
   const maxSerial = certificates.reduce((m, c) => Math.max(m, parseInt(c.serial_number, 10) || 0), 0);
   document.getElementById('certSerial').value = String(maxSerial + 1).padStart(3, '0');
@@ -637,23 +645,23 @@ function openEditCert(id) {
   editCertId = id;
   const c = certificates.find(x => x.id === id);
   document.getElementById('certModalTitle').textContent = '編輯證書';
-  document.getElementById('certSid').value    = c.student_id;
-  document.getElementById('certName').value   = c.name;
-  document.getElementById('certSchool').value = c.school;
-  document.getElementById('certSerial').value = c.serial_number;
+  document.getElementById('certName').value    = c.name;
+  document.getElementById('certSchool').value  = c.school;
+  document.getElementById('certIdLast4').value = c.id_last4 || '';
+  document.getElementById('certSerial').value  = c.serial_number;
   document.getElementById('certModal').classList.remove('hidden');
 }
 
 document.getElementById('saveCertBtn').addEventListener('click', async () => {
   const body = {
-    activity_id: currentActivityId,
-    student_id:  document.getElementById('certSid').value.trim(),
-    name:        document.getElementById('certName').value.trim(),
-    school:      document.getElementById('certSchool').value.trim(),
+    activity_id:   currentActivityId,
+    name:          document.getElementById('certName').value.trim(),
+    school:        document.getElementById('certSchool').value.trim(),
+    id_last4:      document.getElementById('certIdLast4').value.trim(),
     serial_number: document.getElementById('certSerial').value.trim()
   };
-  if (!body.student_id || !body.name || !body.school || !body.serial_number) {
-    toast('請填寫所有欄位', 'error'); return;
+  if (!body.name || !body.school || !body.serial_number) {
+    toast('請填寫姓名、學校、流水編號', 'error'); return;
   }
   const res = editCertId
     ? await api('PUT',  `/api/admin/certificates/${editCertId}`, body)

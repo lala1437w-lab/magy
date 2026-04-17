@@ -28,7 +28,7 @@ function transaction(fn) {
   catch (e) { db.exec('ROLLBACK'); throw e; }
 }
 
-// ── Migration: v1 (activities.year) → v2 (activities.template_type + certificates) ──
+// ── Schema migrations ──────────────────────────────────────────────
 
 function tableExists(name) {
   return !!db.prepare(
@@ -40,6 +40,7 @@ function hasColumn(table, col) {
   return db.prepare(`PRAGMA table_info(${table})`).all().some(c => c.name === col);
 }
 
+// v1 → v2: activities.year single field → template_type + date ranges
 if (tableExists('activities') && !hasColumn('activities', 'template_type')) {
   console.log('⚠  Migrating schema v1 → v2');
   db.exec(`
@@ -47,6 +48,12 @@ if (tableExists('activities') && !hasColumn('activities', 'template_type')) {
     DROP TABLE IF EXISTS students;
     DROP TABLE IF EXISTS activities;
   `);
+}
+
+// v2 → v3: certificates.student_id → name + id_last4 lookup
+if (tableExists('certificates') && hasColumn('certificates', 'student_id')) {
+  console.log('⚠  Migrating schema v2 → v3 (學號 → 姓名/身分證後4碼)');
+  db.exec(`DROP TABLE IF EXISTS certificates;`);
 }
 
 db.exec(`
@@ -78,14 +85,15 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS certificates (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     activity_id    INTEGER NOT NULL,
-    student_id     TEXT    NOT NULL,
-    name           TEXT    NOT NULL,
-    school         TEXT    NOT NULL,
+    name           TEXT    NOT NULL,              -- 姓名（必填）
+    school         TEXT    NOT NULL,              -- 學校（必填）
+    id_last4       TEXT,                          -- 身分證字號後4碼（選填，用於姓名重複辨識）
     serial_number  TEXT    NOT NULL,
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
-    UNIQUE(activity_id, student_id)
+    UNIQUE(activity_id, name, id_last4)
   );
-  CREATE INDEX IF NOT EXISTS idx_cert_student ON certificates(student_id);
+  CREATE INDEX IF NOT EXISTS idx_cert_name     ON certificates(name);
+  CREATE INDEX IF NOT EXISTS idx_cert_id_last4 ON certificates(id_last4);
   CREATE TABLE IF NOT EXISTS admins (
     username      TEXT PRIMARY KEY,
     password_hash TEXT NOT NULL
@@ -114,15 +122,19 @@ function auth(req, res, next) {
 
 // ── Public: Student Lookup ──────────────────────────────────────────────────
 
-// GET /api/student/:id  →  { student_id, certificates: [ { ...cert, activity: {...} } ] }
-app.get('/api/student/:id', (req, res) => {
+// GET /api/student/:key  →  { name, school, certificates: [...] }
+// key 可以是「姓名」或「身分證字號後4碼」
+app.get('/api/student/:key', (req, res) => {
+  const key = req.params.key.trim();
+  if (!key) return res.status(400).json({ error: '請輸入姓名或身分證字號後4碼' });
+
   const rows = db.prepare(`
     SELECT
       c.id            AS cert_id,
       c.activity_id,
-      c.student_id,
       c.name,
       c.school,
+      c.id_last4,
       c.serial_number,
       a.template_type,
       a.name          AS activity_name,
@@ -134,16 +146,26 @@ app.get('/api/student/:id', (req, res) => {
       a.issue_year, a.issue_month, a.issue_day
     FROM certificates c
     JOIN activities a ON a.id = c.activity_id
-    WHERE c.student_id = ?
+    WHERE c.name = ? OR c.id_last4 = ?
     ORDER BY a.start_year DESC, a.start_month DESC, a.start_day DESC
-  `).all(req.params.id);
+  `).all(key, key);
 
-  if (!rows.length) return res.status(404).json({ error: '找不到此學號的證書紀錄，請確認後重試，或聯絡承辦人員' });
+  if (!rows.length) {
+    return res.status(404).json({ error: '查無資料，請確認姓名或身分證字號後4碼是否正確，或聯絡承辦人員' });
+  }
+
+  // 判斷是否對應到多位不同的人（姓名撞名）
+  const distinct = new Set(rows.map(r => `${r.name}|${r.id_last4 || ''}|${r.school}`));
+  if (distinct.size > 1) {
+    return res.status(409).json({
+      error: '查詢到多位同名者，請改用「身分證字號後4碼」查詢'
+    });
+  }
 
   res.json({
-    student_id: rows[0].student_id,
     name: rows[0].name,
     school: rows[0].school,
+    id_last4: rows[0].id_last4,
     certificates: rows
   });
 });
@@ -246,13 +268,13 @@ app.get('/api/admin/activities/:id/certificates', auth, (req, res) => {
 
 app.post('/api/admin/certificates', auth, (req, res) => {
   const b = req.body || {};
-  if (!b.activity_id || !b.student_id || !b.name || !b.school || !b.serial_number) {
+  if (!b.activity_id || !b.name || !b.school || !b.serial_number) {
     return res.status(400).json({ error: '缺少必填欄位' });
   }
   try {
     const r = db.prepare(
-      'INSERT INTO certificates (activity_id, student_id, name, school, serial_number) VALUES (?,?,?,?,?)'
-    ).run(b.activity_id, b.student_id, b.name, b.school, String(b.serial_number));
+      'INSERT INTO certificates (activity_id, name, school, id_last4, serial_number) VALUES (?,?,?,?,?)'
+    ).run(b.activity_id, String(b.name), String(b.school), b.id_last4 ? String(b.id_last4) : null, String(b.serial_number));
     res.json({ id: r.lastInsertRowid });
   } catch (e) {
     res.status(e.message.includes('UNIQUE') ? 409 : 500).json({ error: e.message });
@@ -262,8 +284,8 @@ app.post('/api/admin/certificates', auth, (req, res) => {
 app.put('/api/admin/certificates/:id', auth, (req, res) => {
   const b = req.body || {};
   db.prepare(
-    'UPDATE certificates SET student_id=?, name=?, school=?, serial_number=? WHERE id=?'
-  ).run(b.student_id, b.name, b.school, String(b.serial_number), req.params.id);
+    'UPDATE certificates SET name=?, school=?, id_last4=?, serial_number=? WHERE id=?'
+  ).run(String(b.name), String(b.school), b.id_last4 ? String(b.id_last4) : null, String(b.serial_number), req.params.id);
   res.json({ ok: true });
 });
 
@@ -274,11 +296,11 @@ app.delete('/api/admin/certificates/:id', auth, (req, res) => {
 
 // Bulk import certificates for a specific activity (CSV)
 // Required columns (supports Chinese headers):
-//   學號 / student_id
 //   姓名 / name
 //   學校 / school
 // Optional:
-//   流水編號 / serial_number   (若未提供則自動遞增)
+//   身分證後4碼 / 身分證字號後4碼 / id_last4   (姓名撞名時用於區別；同時也可作為查詢關鍵字)
+//   流水編號 / 文號 / serial_number            (若未提供則自動遞增，3 位數補零)
 app.post('/api/admin/activities/:id/certificates/import', auth, upload.single('file'), (req, res) => {
   const activity_id = +req.params.id;
   const act = db.prepare('SELECT id FROM activities WHERE id = ?').get(activity_id);
@@ -295,19 +317,25 @@ app.post('/api/admin/activities/:id/certificates/import', auth, upload.single('f
 
   let inserted = 0, skipped = 0;
   const ins = db.prepare(
-    'INSERT OR IGNORE INTO certificates (activity_id, student_id, name, school, serial_number) VALUES (?,?,?,?,?)'
+    'INSERT OR IGNORE INTO certificates (activity_id, name, school, id_last4, serial_number) VALUES (?,?,?,?,?)'
   );
 
   transaction(() => {
     for (const r of rows) {
-      const sid    = r.student_id    ?? r['學號'];
-      const name   = r.name          ?? r['姓名'];
-      const school = r.school        ?? r['學校'];
-      let serial   = r.serial_number ?? r['流水編號'] ?? r['文號'] ?? '';
-      if (!sid || !name || !school) { skipped++; continue; }
+      const name    = r.name     ?? r['姓名'];
+      const school  = r.school   ?? r['學校'];
+      const idLast4 = r.id_last4 ?? r['身分證後4碼'] ?? r['身分證字號後4碼'] ?? r['身分證後四碼'] ?? '';
+      let serial    = r.serial_number ?? r['流水編號'] ?? r['文號'] ?? '';
+      if (!name || !school) { skipped++; continue; }
       if (!serial) { serial = String(nextSerial).padStart(3, '0'); nextSerial++; }
       else { serial = String(serial); }
-      const result = ins.run(activity_id, String(sid), String(name), String(school), serial);
+      const result = ins.run(
+        activity_id,
+        String(name).trim(),
+        String(school).trim(),
+        idLast4 ? String(idLast4).trim() : null,
+        serial
+      );
       result.changes > 0 ? inserted++ : skipped++;
     }
   });

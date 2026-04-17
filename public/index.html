@@ -60,9 +60,9 @@ input:focus,select:focus{outline:none;border-color:#1b3a5c;box-shadow:0 0 0 3px 
   <hr class="divider">
 
   <div class="step">
-    <label>學號</label>
+    <label>姓名 或 身分證字號後4碼</label>
     <div class="input-row">
-      <input type="text" id="studentId" placeholder="請輸入學號" autocomplete="off">
+      <input type="text" id="studentId" placeholder="例：王小明 或 1234" autocomplete="off">
       <button class="btn btn-query" id="queryBtn">查詢</button>
     </div>
     <div id="queryError" class="error hidden"></div>
@@ -152,7 +152,7 @@ const TRAINING_LAYOUT = {
 };
 
 // ── State ────────────────────────────────────────────────────────
-let studentData = null;  // { student_id, name, school, certificates: [...] }
+let studentData = null;  // { name, school, id_last4, certificates: [...] }
 let lastCertName = null;
 
 // ── Elements ─────────────────────────────────────────────────────
@@ -169,8 +169,8 @@ const downloadBtn    = document.getElementById('downloadBtn');
 
 // ── Lookup ───────────────────────────────────────────────────────
 async function lookup() {
-  const id = studentIdEl.value.trim();
-  if (!id) return;
+  const key = studentIdEl.value.trim();
+  if (!key) return;
 
   queryBtn.disabled = true;
   queryBtn.textContent = '查詢中…';
@@ -179,7 +179,7 @@ async function lookup() {
   previewSection.classList.add('hidden');
 
   try {
-    const res = await fetch(`/api/student/${encodeURIComponent(id)}`);
+    const res = await fetch(`/api/student/${encodeURIComponent(key)}`);
     const data = await res.json();
     if (!res.ok) {
       queryError.textContent = data.error;
