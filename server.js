@@ -13,54 +13,86 @@ const SECRET = process.env.JWT_SECRET || 'change-me-before-production';
 
 // ── Database ────────────────────────────────────────────────────────────────
 
-// Support Railway persistent volume: mount /data and set DB_PATH=/data/magy.db
 const DATA_DIR = process.env.DATA_DIR || '.';
-fs.mkdirSync(DATA_DIR,   { recursive: true });
-fs.mkdirSync('uploads',  { recursive: true });
+fs.mkdirSync(DATA_DIR, { recursive: true });
+fs.mkdirSync('uploads', { recursive: true });
 
 const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'magy.db');
 const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA foreign_keys = ON');
 
-// Transaction helper (node:sqlite has no built-in transaction())
 function transaction(fn) {
   db.exec('BEGIN');
-  try { fn(); db.exec('COMMIT'); }
+  try { const r = fn(); db.exec('COMMIT'); return r; }
   catch (e) { db.exec('ROLLBACK'); throw e; }
+}
+
+// ── Migration: v1 (activities.year) → v2 (activities.template_type + certificates) ──
+
+function tableExists(name) {
+  return !!db.prepare(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name=?`
+  ).get(name);
+}
+function hasColumn(table, col) {
+  if (!tableExists(table)) return false;
+  return db.prepare(`PRAGMA table_info(${table})`).all().some(c => c.name === col);
+}
+
+if (tableExists('activities') && !hasColumn('activities', 'template_type')) {
+  console.log('⚠  Migrating schema v1 → v2');
+  db.exec(`
+    DROP TABLE IF EXISTS enrollments;
+    DROP TABLE IF EXISTS students;
+    DROP TABLE IF EXISTS activities;
+  `);
 }
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS activities (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    name       TEXT    NOT NULL,
-    year       INTEGER NOT NULL,
-    month      INTEGER NOT NULL,
-    day        INTEGER NOT NULL,
-    hours      REAL    NOT NULL,
-    role       TEXT    NOT NULL DEFAULT '攤位志工',
-    doc_number TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    template_type TEXT    NOT NULL,               -- 'volunteer' | 'training'
+    name          TEXT    NOT NULL,
+
+    start_year    INTEGER NOT NULL,
+    start_month   INTEGER NOT NULL,
+    start_day     INTEGER NOT NULL,
+    end_year      INTEGER,
+    end_month     INTEGER,
+    end_day       INTEGER,
+
+    role          TEXT,                           -- 志工：職位
+    hours         REAL,                           -- 志工：時數（選填）
+    content       TEXT,                           -- 研習：課程內容
+    organizer     TEXT,                           -- 研習：主辦單位
+
+    doc_prefix    TEXT    NOT NULL,               -- '科教謝字' / '物教證字'
+
+    issue_year    INTEGER NOT NULL,
+    issue_month   INTEGER NOT NULL,
+    issue_day     INTEGER NOT NULL,
+
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
   );
-  CREATE TABLE IF NOT EXISTS students (
-    student_id TEXT PRIMARY KEY,
-    name       TEXT NOT NULL,
-    school     TEXT NOT NULL
+  CREATE TABLE IF NOT EXISTS certificates (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    activity_id    INTEGER NOT NULL,
+    student_id     TEXT    NOT NULL,
+    name           TEXT    NOT NULL,
+    school         TEXT    NOT NULL,
+    serial_number  TEXT    NOT NULL,
+    FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
+    UNIQUE(activity_id, student_id)
   );
-  CREATE TABLE IF NOT EXISTS enrollments (
-    student_id  TEXT    NOT NULL,
-    activity_id INTEGER NOT NULL,
-    PRIMARY KEY (student_id, activity_id),
-    FOREIGN KEY (student_id)  REFERENCES students(student_id)  ON DELETE CASCADE,
-    FOREIGN KEY (activity_id) REFERENCES activities(id)        ON DELETE CASCADE
-  );
+  CREATE INDEX IF NOT EXISTS idx_cert_student ON certificates(student_id);
   CREATE TABLE IF NOT EXISTS admins (
     username      TEXT PRIMARY KEY,
     password_hash TEXT NOT NULL
   );
 `);
 
-// Seed default admin (admin / admin123) on first run
+// Seed default admin on first run
 if (db.prepare('SELECT COUNT(*) AS c FROM admins').get().c === 0) {
   db.prepare('INSERT INTO admins VALUES (?, ?)').run('admin', bcrypt.hashSync('admin123', 10));
   console.log('預設帳號：admin / admin123  ← 請登入後立即修改密碼');
@@ -82,19 +114,38 @@ function auth(req, res, next) {
 
 // ── Public: Student Lookup ──────────────────────────────────────────────────
 
-// GET /api/student/:id  →  { student_id, name, school, activities: [...] }
+// GET /api/student/:id  →  { student_id, certificates: [ { ...cert, activity: {...} } ] }
 app.get('/api/student/:id', (req, res) => {
-  const student = db.prepare('SELECT * FROM students WHERE student_id = ?').get(req.params.id);
-  if (!student) return res.status(404).json({ error: '找不到此學號，請確認後重試，或聯絡承辦人員' });
-
-  const activities = db.prepare(`
-    SELECT a.* FROM activities a
-    JOIN enrollments e ON e.activity_id = a.id
-    WHERE e.student_id = ?
-    ORDER BY a.year DESC, a.month DESC, a.day DESC
+  const rows = db.prepare(`
+    SELECT
+      c.id            AS cert_id,
+      c.activity_id,
+      c.student_id,
+      c.name,
+      c.school,
+      c.serial_number,
+      a.template_type,
+      a.name          AS activity_name,
+      a.start_year, a.start_month, a.start_day,
+      a.end_year, a.end_month, a.end_day,
+      a.role, a.hours,
+      a.content, a.organizer,
+      a.doc_prefix,
+      a.issue_year, a.issue_month, a.issue_day
+    FROM certificates c
+    JOIN activities a ON a.id = c.activity_id
+    WHERE c.student_id = ?
+    ORDER BY a.start_year DESC, a.start_month DESC, a.start_day DESC
   `).all(req.params.id);
 
-  res.json({ ...student, activities });
+  if (!rows.length) return res.status(404).json({ error: '找不到此學號的證書紀錄，請確認後重試，或聯絡承辦人員' });
+
+  res.json({
+    student_id: rows[0].student_id,
+    name: rows[0].name,
+    school: rows[0].school,
+    certificates: rows
+  });
 });
 
 // ── Admin Auth ──────────────────────────────────────────────────────────────
@@ -119,23 +170,63 @@ app.put('/api/admin/password', auth, (req, res) => {
 
 // ── Admin: Activities ───────────────────────────────────────────────────────
 
-app.get('/api/admin/activities', auth, (_req, res) =>
-  res.json(db.prepare('SELECT * FROM activities ORDER BY year DESC, month DESC, day DESC').all())
-);
+app.get('/api/admin/activities', auth, (_req, res) => {
+  const rows = db.prepare(`
+    SELECT a.*, (SELECT COUNT(*) FROM certificates c WHERE c.activity_id = a.id) AS cert_count
+    FROM activities a
+    ORDER BY a.start_year DESC, a.start_month DESC, a.start_day DESC, a.id DESC
+  `).all();
+  res.json(rows);
+});
+
+app.get('/api/admin/activities/:id', auth, (req, res) => {
+  const act = db.prepare('SELECT * FROM activities WHERE id = ?').get(req.params.id);
+  if (!act) return res.status(404).json({ error: '找不到活動' });
+  res.json(act);
+});
 
 app.post('/api/admin/activities', auth, (req, res) => {
-  const { name, year, month, day, hours, role, doc_number } = req.body;
-  const r = db.prepare(
-    'INSERT INTO activities (name,year,month,day,hours,role,doc_number) VALUES (?,?,?,?,?,?,?)'
-  ).run(name, year, month, day, hours, role || '攤位志工', doc_number || null);
+  const b = req.body || {};
+  if (!b.template_type || !b.name || !b.start_year || !b.start_month || !b.start_day
+      || !b.issue_year || !b.issue_month || !b.issue_day || !b.doc_prefix) {
+    return res.status(400).json({ error: '缺少必填欄位' });
+  }
+  const r = db.prepare(`
+    INSERT INTO activities
+      (template_type, name,
+       start_year, start_month, start_day,
+       end_year,   end_month,   end_day,
+       role, hours, content, organizer, doc_prefix,
+       issue_year, issue_month, issue_day)
+    VALUES (?,?, ?,?,?, ?,?,?, ?,?,?,?,?, ?,?,?)
+  `).run(
+    b.template_type, b.name,
+    b.start_year, b.start_month, b.start_day,
+    b.end_year || null, b.end_month || null, b.end_day || null,
+    b.role || null, b.hours == null ? null : +b.hours, b.content || null, b.organizer || null, b.doc_prefix,
+    b.issue_year, b.issue_month, b.issue_day
+  );
   res.json({ id: r.lastInsertRowid });
 });
 
 app.put('/api/admin/activities/:id', auth, (req, res) => {
-  const { name, year, month, day, hours, role, doc_number } = req.body;
-  db.prepare(
-    'UPDATE activities SET name=?,year=?,month=?,day=?,hours=?,role=?,doc_number=? WHERE id=?'
-  ).run(name, year, month, day, hours, role, doc_number, req.params.id);
+  const b = req.body || {};
+  db.prepare(`
+    UPDATE activities SET
+      template_type=?, name=?,
+      start_year=?, start_month=?, start_day=?,
+      end_year=?,   end_month=?,   end_day=?,
+      role=?, hours=?, content=?, organizer=?, doc_prefix=?,
+      issue_year=?, issue_month=?, issue_day=?
+    WHERE id=?
+  `).run(
+    b.template_type, b.name,
+    b.start_year, b.start_month, b.start_day,
+    b.end_year || null, b.end_month || null, b.end_day || null,
+    b.role || null, b.hours == null ? null : +b.hours, b.content || null, b.organizer || null, b.doc_prefix,
+    b.issue_year, b.issue_month, b.issue_day,
+    req.params.id
+  );
   res.json({ ok: true });
 });
 
@@ -144,108 +235,93 @@ app.delete('/api/admin/activities/:id', auth, (req, res) => {
   res.json({ ok: true });
 });
 
-// ── Admin: Students ─────────────────────────────────────────────────────────
+// ── Admin: Certificates ─────────────────────────────────────────────────────
 
-app.get('/api/admin/students', auth, (_req, res) =>
-  res.json(db.prepare('SELECT * FROM students ORDER BY student_id').all())
-);
+app.get('/api/admin/activities/:id/certificates', auth, (req, res) => {
+  const rows = db.prepare(
+    'SELECT * FROM certificates WHERE activity_id = ? ORDER BY CAST(serial_number AS INTEGER), serial_number'
+  ).all(req.params.id);
+  res.json(rows);
+});
 
-app.post('/api/admin/students', auth, (req, res) => {
-  const { student_id, name, school } = req.body;
+app.post('/api/admin/certificates', auth, (req, res) => {
+  const b = req.body || {};
+  if (!b.activity_id || !b.student_id || !b.name || !b.school || !b.serial_number) {
+    return res.status(400).json({ error: '缺少必填欄位' });
+  }
   try {
-    db.prepare('INSERT INTO students VALUES (?,?,?)').run(student_id, name, school);
-    res.json({ ok: true });
+    const r = db.prepare(
+      'INSERT INTO certificates (activity_id, student_id, name, school, serial_number) VALUES (?,?,?,?,?)'
+    ).run(b.activity_id, b.student_id, b.name, b.school, String(b.serial_number));
+    res.json({ id: r.lastInsertRowid });
   } catch (e) {
     res.status(e.message.includes('UNIQUE') ? 409 : 500).json({ error: e.message });
   }
 });
 
-app.put('/api/admin/students/:id', auth, (req, res) => {
-  const { name, school } = req.body;
-  db.prepare('UPDATE students SET name=?, school=? WHERE student_id=?').run(name, school, req.params.id);
+app.put('/api/admin/certificates/:id', auth, (req, res) => {
+  const b = req.body || {};
+  db.prepare(
+    'UPDATE certificates SET student_id=?, name=?, school=?, serial_number=? WHERE id=?'
+  ).run(b.student_id, b.name, b.school, String(b.serial_number), req.params.id);
   res.json({ ok: true });
 });
 
-app.delete('/api/admin/students/:id', auth, (req, res) => {
-  db.prepare('DELETE FROM students WHERE student_id=?').run(req.params.id);
+app.delete('/api/admin/certificates/:id', auth, (req, res) => {
+  db.prepare('DELETE FROM certificates WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
 
-// Import students from CSV  (支援中文欄位名：學號,姓名,學校)
-app.post('/api/admin/students/import', auth, upload.single('file'), (req, res) => {
+// Bulk import certificates for a specific activity (CSV)
+// Required columns (supports Chinese headers):
+//   學號 / student_id
+//   姓名 / name
+//   學校 / school
+// Optional:
+//   流水編號 / serial_number   (若未提供則自動遞增)
+app.post('/api/admin/activities/:id/certificates/import', auth, upload.single('file'), (req, res) => {
+  const activity_id = +req.params.id;
+  const act = db.prepare('SELECT id FROM activities WHERE id = ?').get(activity_id);
+  if (!act) { if (req.file) fs.unlinkSync(req.file.path); return res.status(404).json({ error: '活動不存在' }); }
+
   const raw = fs.readFileSync(req.file.path, 'utf8');
   fs.unlinkSync(req.file.path);
-  const rows = parse(raw, { columns: true, skip_empty_lines: true, trim: true });
+  const rows = parse(raw, { columns: true, skip_empty_lines: true, trim: true, bom: true });
+
+  // Current max serial for auto-numbering
+  let nextSerial = (db.prepare(
+    'SELECT MAX(CAST(serial_number AS INTEGER)) AS m FROM certificates WHERE activity_id = ?'
+  ).get(activity_id).m || 0) + 1;
 
   let inserted = 0, skipped = 0;
-  const ins = db.prepare('INSERT OR IGNORE INTO students VALUES (?,?,?)');
+  const ins = db.prepare(
+    'INSERT OR IGNORE INTO certificates (activity_id, student_id, name, school, serial_number) VALUES (?,?,?,?,?)'
+  );
+
   transaction(() => {
     for (const r of rows) {
       const sid    = r.student_id    ?? r['學號'];
       const name   = r.name          ?? r['姓名'];
       const school = r.school        ?? r['學校'];
+      let serial   = r.serial_number ?? r['流水編號'] ?? r['文號'] ?? '';
       if (!sid || !name || !school) { skipped++; continue; }
-      const result = ins.run(sid, name, school);
+      if (!serial) { serial = String(nextSerial).padStart(3, '0'); nextSerial++; }
+      else { serial = String(serial); }
+      const result = ins.run(activity_id, String(sid), String(name), String(school), serial);
       result.changes > 0 ? inserted++ : skipped++;
     }
   });
   res.json({ inserted, skipped, total: rows.length });
 });
 
-// ── Admin: Enrollments ──────────────────────────────────────────────────────
+// ── Admin: Template Upload ──────────────────────────────────────────────────
 
-app.get('/api/admin/enrollments/:activityId', auth, (req, res) =>
-  res.json(db.prepare(`
-    SELECT s.* FROM students s
-    JOIN enrollments e ON e.student_id = s.student_id
-    WHERE e.activity_id = ?
-    ORDER BY s.student_id
-  `).all(req.params.activityId))
-);
-
-app.post('/api/admin/enrollments', auth, (req, res) => {
-  const { student_id, activity_id } = req.body;
-  try {
-    db.prepare('INSERT INTO enrollments VALUES (?,?)').run(student_id, activity_id);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(e.message.includes('UNIQUE') ? 409 : 500).json({ error: e.message });
-  }
-});
-
-app.delete('/api/admin/enrollments', auth, (req, res) => {
-  const { student_id, activity_id } = req.body;
-  db.prepare('DELETE FROM enrollments WHERE student_id=? AND activity_id=?').run(student_id, activity_id);
-  res.json({ ok: true });
-});
-
-// Bulk enroll from CSV  (欄位：學號,活動名稱)
-app.post('/api/admin/enrollments/import', auth, upload.single('file'), (req, res) => {
-  const raw = fs.readFileSync(req.file.path, 'utf8');
-  fs.unlinkSync(req.file.path);
-  const rows = parse(raw, { columns: true, skip_empty_lines: true, trim: true });
-
-  let inserted = 0, skipped = 0;
-  const ins    = db.prepare('INSERT OR IGNORE INTO enrollments VALUES (?,?)');
-  const getAct = db.prepare('SELECT id FROM activities WHERE name = ?');
-  transaction(() => {
-    for (const row of rows) {
-      const sid   = row.student_id    ?? row['學號'];
-      const aName = row.activity_name ?? row['活動名稱'];
-      const act   = getAct.get(aName);
-      if (!sid || !act) { skipped++; continue; }
-      const result = ins.run(sid, act.id);
-      result.changes > 0 ? inserted++ : skipped++;
-    }
-  });
-  res.json({ inserted, skipped, total: rows.length });
-});
-
-// ── Admin: Template ─────────────────────────────────────────────────────────
-
-app.post('/api/admin/template', auth, upload.single('template'), (req, res) => {
+app.post('/api/admin/template/:type', auth, upload.single('template'), (req, res) => {
+  const type = req.params.type;
+  if (!['volunteer', 'training'].includes(type))
+    return res.status(400).json({ error: '模板類型錯誤' });
   if (!req.file) return res.status(400).json({ error: '未收到檔案' });
-  fs.copyFileSync(req.file.path, path.join(__dirname, 'public', 'template.pdf'));
+  fs.copyFileSync(req.file.path, path.join(__dirname, 'public', `${type}.pdf`));
   fs.unlinkSync(req.file.path);
   res.json({ ok: true });
 });

@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>志工服務證明書下載 — 國立高雄大學理學院科學教育中心</title>
+<title>證明書下載 — 國立高雄大學理學院科學教育中心</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&display=swap">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+.hidden{display:none!important}
 body{font-family:'Microsoft JhengHei','微軟正黑體','Noto Sans TC',sans-serif;background:linear-gradient(135deg,#0d1b2a 0%,#1b3a5c 50%,#0d1b2a 100%);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px}
-.card{background:#fff;border-radius:20px;padding:40px 36px;max-width:500px;width:100%;box-shadow:0 30px 60px rgba(0,0,0,.35)}
+.card{background:#fff;border-radius:20px;padding:40px 36px;max-width:560px;width:100%;box-shadow:0 30px 60px rgba(0,0,0,.35)}
 .header{text-align:center;margin-bottom:28px}
 .header h1{font-size:26px;color:#1b3a5c;margin-bottom:4px}
 .header p{font-size:14px;color:#888;letter-spacing:1px}
@@ -35,11 +36,13 @@ input:focus,select:focus{outline:none;border-color:#1b3a5c;box-shadow:0 0 0 3px 
 .info-label{color:#777}
 .info-val{color:#1b3a5c;font-weight:600}
 .act-info{background:#f4f7fb;border-radius:10px;padding:14px 16px;margin-top:10px;border:1px solid #e2e8f0}
+.badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;margin-right:6px}
+.badge-volunteer{background:#e8f9e9;color:#1a7f37}
+.badge-training{background:#e8f0fe;color:#1b3a5c}
 .preview-section{margin-top:24px;text-align:center}
 .preview-section h3{font-size:16px;color:#444;margin-bottom:12px}
 #previewCanvas{width:100%;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
 .error{background:#fff0f0;border:1px solid #ffcccc;border-radius:10px;padding:12px 16px;color:#c0392b;font-size:14px;margin-top:10px}
-.hidden{display:none!important}
 .spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .footer{text-align:center;margin-top:24px;font-size:12px;color:#aaa}
@@ -51,12 +54,11 @@ input:focus,select:focus{outline:none;border-color:#1b3a5c;box-shadow:0 0 0 3px 
 <body>
 <div class="card">
   <div class="header">
-    <h1>志工服務證明書</h1>
+    <h1>證明書下載</h1>
     <p>國立高雄大學理學院 科學教育中心</p>
   </div>
   <hr class="divider">
 
-  <!-- Step 1: 輸入學號 -->
   <div class="step">
     <label>學號</label>
     <div class="input-row">
@@ -66,7 +68,6 @@ input:focus,select:focus{outline:none;border-color:#1b3a5c;box-shadow:0 0 0 3px 
     <div id="queryError" class="error hidden"></div>
   </div>
 
-  <!-- Step 2: 學生資料 + 活動選擇 (hidden until lookup) -->
   <div id="formSection" class="hidden">
     <div class="student-info">
       <div class="info-row"><span class="info-label">姓名</span><span id="sName" class="info-val"></span></div>
@@ -74,15 +75,11 @@ input:focus,select:focus{outline:none;border-color:#1b3a5c;box-shadow:0 0 0 3px 
     </div>
 
     <div class="step">
-      <label>選擇活動</label>
-      <select id="activity">
-        <option value="">— 請選擇活動 —</option>
+      <label>選擇證書</label>
+      <select id="certificate">
+        <option value="">— 請選擇證書 —</option>
       </select>
-      <div id="actInfo" class="act-info hidden">
-        <div class="info-row"><span class="info-label">活動日期</span><span id="actDate" class="info-val"></span></div>
-        <div class="info-row"><span class="info-label">服務類型</span><span id="actRole" class="info-val"></span></div>
-        <div class="info-row"><span class="info-label">服務時數</span><span id="actHours" class="info-val"></span></div>
-      </div>
+      <div id="certInfo" class="act-info hidden"></div>
     </div>
 
     <button class="btn btn-primary btn-full" id="genBtn">
@@ -91,7 +88,6 @@ input:focus,select:focus{outline:none;border-color:#1b3a5c;box-shadow:0 0 0 3px 
     </button>
   </div>
 
-  <!-- Preview -->
   <div id="previewSection" class="preview-section hidden">
     <h3>證明書預覽</h3>
     <canvas id="previewCanvas"></canvas>
@@ -106,44 +102,72 @@ input:focus,select:focus{outline:none;border-color:#1b3a5c;box-shadow:0 0 0 3px 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ── 模板座標 (根據 pdf.js textContent 精確計算) ─────────────────
 const RENDER_SCALE = 2;
 const FONT = '"標楷體","DFKai-SB","Noto Serif TC","BiauKai","Kaiti TC",serif';
 
-const WHITEOUT = [
-  { x:0.62, y:0.212, w:0.33, h:0.026 },
-  { x:0.07, y:0.296, w:0.86, h:0.038 },
-  { x:0.07, y:0.349, w:0.86, h:0.038 },
-  { x:0.07, y:0.402, w:0.86, h:0.038 },
-  { x:0.07, y:0.456, w:0.86, h:0.038 },
-  { x:0.07, y:0.862, w:0.86, h:0.044 }
-];
-const TEXTS = {
-  docNumber:    { x:0.642, y:0.218, pt:11 },
-  nameLine:     { x:0.140, y:0.304, pt:20 },
-  dateLine:     { x:0.140, y:0.357, pt:20 },
-  activityLine: { x:0.140, y:0.410, pt:20 },
-  hoursLine:    { x:0.140, y:0.464, pt:20 },
-  bottomDate:   { x:0.50,  y:0.870, pt:24, align:'center' }
+// ── Template renderers ───────────────────────────────────────────
+// Each function returns coordinates + draw logic for a given template.
+// Coordinates are normalized (0–1) based on the rendered page size.
+
+const VOLUNTEER_LAYOUT = {
+  pdfUrl: '/volunteer.pdf',
+  whiteout: [
+    { x:0.62, y:0.212, w:0.33, h:0.026 },   // 文號
+    { x:0.07, y:0.296, w:0.86, h:0.038 },   // 學校姓名
+    { x:0.07, y:0.349, w:0.86, h:0.038 },   // 日期
+    { x:0.07, y:0.402, w:0.86, h:0.038 },   // 活動
+    { x:0.07, y:0.456, w:0.86, h:0.038 },   // 時數
+    { x:0.07, y:0.862, w:0.86, h:0.044 }    // 底部日期
+  ],
+  texts: {
+    docNumber:    { x:0.642, y:0.218, pt:11 },
+    nameLine:     { x:0.140, y:0.304, pt:20 },
+    dateLine:     { x:0.140, y:0.357, pt:20 },
+    activityLine: { x:0.140, y:0.410, pt:20 },
+    hoursLine:    { x:0.140, y:0.464, pt:20 },
+    bottomDate:   { x:0.50,  y:0.870, pt:24, align:'center' }
+  }
+};
+
+const TRAINING_LAYOUT = {
+  pdfUrl: '/training.pdf',
+  whiteout: [
+    { x:0.55, y:0.235, w:0.40, h:0.028 },   // 文號
+    { x:0.07, y:0.315, w:0.86, h:0.048 },   // 姓名
+    { x:0.07, y:0.380, w:0.86, h:0.048 },   // 日期
+    { x:0.07, y:0.445, w:0.86, h:0.048 },   // 活動名稱 line 1
+    { x:0.07, y:0.505, w:0.86, h:0.048 },   // 活動名稱 line 2
+    { x:0.07, y:0.570, w:0.86, h:0.060 },   // 研習內容（可多行）
+    { x:0.07, y:0.880, w:0.86, h:0.044 }    // 底部日期
+  ],
+  texts: {
+    docNumber:    { x:0.575, y:0.240, pt:13 },
+    nameLine:     { x:0.135, y:0.322, pt:22 },
+    dateLine:     { x:0.135, y:0.388, pt:22 },
+    activityLine1:{ x:0.135, y:0.452, pt:22 },
+    activityLine2:{ x:0.135, y:0.512, pt:22 },
+    contentLine:  { x:0.135, y:0.578, pt:13 },
+    bottomDate:   { x:0.50,  y:0.888, pt:22, align:'center' }
+  }
 };
 
 // ── State ────────────────────────────────────────────────────────
-let student = null;
-let lastStudentData = null;
+let studentData = null;  // { student_id, name, school, certificates: [...] }
+let lastCertName = null;
 
 // ── Elements ─────────────────────────────────────────────────────
-const studentIdEl  = document.getElementById('studentId');
-const queryBtn     = document.getElementById('queryBtn');
-const queryError   = document.getElementById('queryError');
-const formSection  = document.getElementById('formSection');
-const activitySel  = document.getElementById('activity');
-const actInfo      = document.getElementById('actInfo');
-const genBtn       = document.getElementById('genBtn');
+const studentIdEl   = document.getElementById('studentId');
+const queryBtn      = document.getElementById('queryBtn');
+const queryError    = document.getElementById('queryError');
+const formSection   = document.getElementById('formSection');
+const certSel       = document.getElementById('certificate');
+const certInfo      = document.getElementById('certInfo');
+const genBtn        = document.getElementById('genBtn');
 const previewSection = document.getElementById('previewSection');
 const previewCanvas  = document.getElementById('previewCanvas');
 const downloadBtn    = document.getElementById('downloadBtn');
 
-// ── Student Lookup ───────────────────────────────────────────────
+// ── Lookup ───────────────────────────────────────────────────────
 async function lookup() {
   const id = studentIdEl.value.trim();
   if (!id) return;
@@ -162,18 +186,19 @@ async function lookup() {
       queryError.classList.remove('hidden');
       return;
     }
-    student = data;
+    studentData = data;
     document.getElementById('sName').textContent   = data.name;
     document.getElementById('sSchool').textContent = data.school;
 
-    activitySel.innerHTML = '<option value="">— 請選擇活動 —</option>';
-    data.activities.forEach((a, i) => {
+    certSel.innerHTML = '<option value="">— 請選擇證書 —</option>';
+    data.certificates.forEach((c, i) => {
       const o = document.createElement('option');
       o.value = i;
-      o.textContent = a.name;
-      activitySel.appendChild(o);
+      const typeLabel = c.template_type === 'volunteer' ? '[志工]' : '[研習]';
+      o.textContent = `${typeLabel} ${c.activity_name}`;
+      certSel.appendChild(o);
     });
-    actInfo.classList.add('hidden');
+    certInfo.classList.add('hidden');
     formSection.classList.remove('hidden');
   } catch {
     queryError.textContent = '網路錯誤，請稍後再試';
@@ -187,28 +212,56 @@ async function lookup() {
 queryBtn.addEventListener('click', lookup);
 studentIdEl.addEventListener('keydown', e => e.key === 'Enter' && lookup());
 
-// ── Activity Selection ───────────────────────────────────────────
-activitySel.addEventListener('change', () => {
-  const idx = activitySel.value;
-  if (idx === '') { actInfo.classList.add('hidden'); return; }
-  const a = student.activities[idx];
-  document.getElementById('actDate').textContent  = `中華民國 ${a.year} 年 ${a.month} 月 ${a.day} 日`;
-  document.getElementById('actRole').textContent  = a.role;
-  document.getElementById('actHours').textContent = `${a.hours} 小時`;
-  actInfo.classList.remove('hidden');
+// ── Certificate selection display ────────────────────────────────
+function fmtDateRange(c) {
+  const s = `${c.start_year} 年 ${c.start_month} 月 ${c.start_day} 日`;
+  if (!c.end_year) return s;
+  const e = `${c.end_year} 年 ${c.end_month} 月 ${c.end_day} 日`;
+  return s === e ? s : `${s} ~ ${e}`;
+}
+
+certSel.addEventListener('change', () => {
+  const idx = certSel.value;
+  if (idx === '') { certInfo.classList.add('hidden'); return; }
+  const c = studentData.certificates[idx];
+  const badge = c.template_type === 'volunteer'
+    ? '<span class="badge badge-volunteer">志工證明</span>'
+    : '<span class="badge badge-training">研習證明</span>';
+
+  let extra = '';
+  if (c.template_type === 'volunteer') {
+    extra = `
+      <div class="info-row"><span class="info-label">服務角色</span><span class="info-val">${c.role || '-'}</span></div>
+      ${c.hours != null ? `<div class="info-row"><span class="info-label">服務時數</span><span class="info-val">${c.hours} 小時</span></div>` : ''}
+    `;
+  } else {
+    extra = c.organizer ? `<div class="info-row"><span class="info-label">主辦單位</span><span class="info-val">${c.organizer}</span></div>` : '';
+  }
+
+  certInfo.innerHTML = `
+    <div class="info-row"><span class="info-label">證書類型</span><span class="info-val">${badge}</span></div>
+    <div class="info-row"><span class="info-label">活動日期</span><span class="info-val">中華民國 ${fmtDateRange(c)}</span></div>
+    <div class="info-row"><span class="info-label">文號</span><span class="info-val">${c.doc_prefix}第 ${c.serial_number} 號</span></div>
+    ${extra}
+  `;
+  certInfo.classList.remove('hidden');
   previewSection.classList.add('hidden');
 });
 
-// ── Generate Certificate ─────────────────────────────────────────
+// ── Generate ─────────────────────────────────────────────────────
 genBtn.addEventListener('click', async () => {
-  const idx = activitySel.value;
-  if (idx === '' || !student) { alert('請選擇活動'); return; }
+  const idx = certSel.value;
+  if (idx === '' || !studentData) { alert('請選擇證書'); return; }
 
   setGenLoading(true);
   try {
-    const activity = student.activities[idx];
-    await renderCertificate({ school: student.school, name: student.name, activity }, previewCanvas);
-    lastStudentData = { name: student.name };
+    const cert = studentData.certificates[idx];
+    if (cert.template_type === 'volunteer') {
+      await renderVolunteer(cert, previewCanvas);
+    } else {
+      await renderTraining(cert, previewCanvas);
+    }
+    lastCertName = `${cert.template_type === 'volunteer' ? '志工服務' : '研習'}證明書_${studentData.name}`;
     previewSection.classList.remove('hidden');
     previewCanvas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (e) {
@@ -219,16 +272,63 @@ genBtn.addEventListener('click', async () => {
 });
 
 downloadBtn.addEventListener('click', () => {
-  if (lastStudentData) downloadPDF(previewCanvas, lastStudentData.name);
+  if (lastCertName) downloadPDF(previewCanvas, lastCertName);
 });
 
-// ── Core Rendering ───────────────────────────────────────────────
-async function renderCertificate({ school, name, activity }, target) {
+// ── Renderers ────────────────────────────────────────────────────
+async function renderVolunteer(c, target) {
+  const { ctx, off, W, H } = await preparePage(VOLUNTEER_LAYOUT.pdfUrl, VOLUNTEER_LAYOUT.whiteout);
+  const L = VOLUNTEER_LAYOUT.texts;
+
+  drawAt(ctx, W, H, L.docNumber,    `${c.doc_prefix}第 ${c.serial_number} 號`);
+  drawAt(ctx, W, H, L.nameLine,     `${c.school}　${c.name}　同學`);
+  drawAt(ctx, W, H, L.dateLine,     `於中華民國 ${fmtDateRange(c)}`);
+  drawAt(ctx, W, H, L.activityLine, `協助「${c.activity_name}」`);
+  const roleLine = `擔任${c.role || ''}${c.hours != null ? `，服務時數合計 ${c.hours} 小時` : ''}，特此證明。`;
+  drawAt(ctx, W, H, L.hoursLine, roleLine);
+  drawAt(ctx, W, H, L.bottomDate, fmtBottomDate(c.issue_year, c.issue_month, c.issue_day));
+
+  target.width = W; target.height = H;
+  target.getContext('2d').drawImage(off, 0, 0);
+}
+
+async function renderTraining(c, target) {
+  const { ctx, off, W, H } = await preparePage(TRAINING_LAYOUT.pdfUrl, TRAINING_LAYOUT.whiteout);
+  const L = TRAINING_LAYOUT.texts;
+
+  drawAt(ctx, W, H, L.docNumber, `${c.doc_prefix}第 ${c.serial_number} 號`);
+  drawAt(ctx, W, H, L.nameLine,  `${c.school}　${c.name}`);
+
+  // Date range: 於中華民國 XXX 年 XX 月 XX 日 至(及) XX 日
+  let dateLine;
+  if (!c.end_year || (c.start_year === c.end_year && c.start_month === c.end_month && c.start_day === c.end_day)) {
+    dateLine = `於中華民國 ${c.start_year} 年 ${c.start_month} 月 ${c.start_day} 日`;
+  } else if (c.start_year === c.end_year && c.start_month === c.end_month) {
+    dateLine = `於中華民國 ${c.start_year} 年 ${c.start_month} 月 ${c.start_day} 日至(及) ${c.end_day} 日`;
+  } else {
+    dateLine = `於中華民國 ${c.start_year} 年 ${c.start_month} 月 ${c.start_day} 日至 ${c.end_year} 年 ${c.end_month} 月 ${c.end_day} 日`;
+  }
+  drawAt(ctx, W, H, L.dateLine, dateLine);
+
+  // Activity line 1: 參加由 XX 主辦之「...」
+  const organizer = c.organizer || '中華民國物理教育學會';
+  drawAt(ctx, W, H, L.activityLine1, `參加由${organizer}主辦之`);
+  drawAt(ctx, W, H, L.activityLine2, `「${c.activity_name}」`);
+
+  if (c.content) drawAt(ctx, W, H, L.contentLine, c.content);
+
+  drawAt(ctx, W, H, L.bottomDate, fmtBottomDate(c.issue_year, c.issue_month, c.issue_day));
+
+  target.width = W; target.height = H;
+  target.getContext('2d').drawImage(off, 0, 0);
+}
+
+// ── Helpers ──────────────────────────────────────────────────────
+async function preparePage(pdfUrl, whiteoutList) {
   await document.fonts.ready;
-  const pdf  = await pdfjsLib.getDocument('/template.pdf').promise;
+  const pdf  = await pdfjsLib.getDocument(pdfUrl).promise;
   const page = await pdf.getPage(1);
   const vp   = page.getViewport({ scale: RENDER_SCALE });
-
   const off = document.createElement('canvas');
   off.width = vp.width; off.height = vp.height;
   const ctx = off.getContext('2d');
@@ -236,40 +336,31 @@ async function renderCertificate({ school, name, activity }, target) {
 
   const W = off.width, H = off.height;
   ctx.fillStyle = '#FFF';
-  WHITEOUT.forEach(r => ctx.fillRect(r.x*W, r.y*H, r.w*W, r.h*H));
-
+  whiteoutList.forEach(r => ctx.fillRect(r.x*W, r.y*H, r.w*W, r.h*H));
   ctx.fillStyle = '#000'; ctx.textBaseline = 'top';
-  draw(ctx,W,H,'docNumber',    `科教謝字第 ${activity.doc_number} 號`);
-  draw(ctx,W,H,'nameLine',     `${school}　${name}　同學`);
-  draw(ctx,W,H,'dateLine',     `於中華民國 ${activity.year} 年 ${activity.month} 月 ${activity.day} 日`);
-  draw(ctx,W,H,'activityLine', `擔任「${activity.name}」`);
-  draw(ctx,W,H,'hoursLine',    `${activity.role}，服務時數合計 ${activity.hours} 小時，特此證明。`);
-  draw(ctx,W,H,'bottomDate',   fmtDate(activity.year, activity.month, activity.day));
-
-  target.width = W; target.height = H;
-  target.getContext('2d').drawImage(off, 0, 0);
+  return { ctx, off, W, H };
 }
 
-function draw(ctx, W, H, key, text) {
-  const c = TEXTS[key];
-  ctx.font = `${c.pt * RENDER_SCALE}px ${FONT}`;
-  ctx.textAlign = c.align || 'left';
-  ctx.fillText(text, c.x*W, c.y*H);
+function drawAt(ctx, W, H, cfg, text) {
+  if (!cfg || !text) return;
+  ctx.font = `${cfg.pt * RENDER_SCALE}px ${FONT}`;
+  ctx.textAlign = cfg.align || 'left';
+  ctx.fillText(text, cfg.x * W, cfg.y * H);
   ctx.textAlign = 'left';
 }
 
-function fmtDate(y, m, d) {
+function fmtBottomDate(y, m, d) {
   return `中 華 民 國  ${String(y).split('').join('  ')}  年  ${String(m).split('').join('  ')}  月  ${String(d).split('').join('  ')}  日`;
 }
 
-function downloadPDF(canvas, name) {
+function downloadPDF(canvas, filename) {
   const img = canvas.toDataURL('image/jpeg', 0.92);
   const mmW = (canvas.width  / RENDER_SCALE) * 25.4 / 72;
   const mmH = (canvas.height / RENDER_SCALE) * 25.4 / 72;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation:'p', unit:'mm', format:[mmW,mmH] });
   doc.addImage(img,'JPEG',0,0,mmW,mmH);
-  doc.save(`志工服務證明書_${name}.pdf`);
+  doc.save(`${filename}.pdf`);
 }
 
 function setGenLoading(on) {

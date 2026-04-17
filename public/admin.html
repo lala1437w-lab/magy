@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>後台管理 — 志工服務證明書系統</title>
+<title>後台管理 — 志工/研習證明書系統</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 .hidden{display:none!important}
 body{font-family:'Microsoft JhengHei','微軟正黑體',sans-serif;background:#f0f2f5;color:#333}
 
-/* ── Login ── */
+/* Login */
 #loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0d1b2a,#1b3a5c)}
 .login-card{background:#fff;border-radius:16px;padding:40px;width:360px;box-shadow:0 20px 40px rgba(0,0,0,.3);text-align:center}
 .login-card h1{font-size:22px;color:#1b3a5c;margin-bottom:4px}
@@ -22,8 +22,8 @@ body{font-family:'Microsoft JhengHei','微軟正黑體',sans-serif;background:#f
 .login-btn:hover{opacity:.9}
 .login-error{background:#fff0f0;border:1px solid #ffcdd2;border-radius:8px;padding:10px;color:#c62828;font-size:13px;margin-bottom:14px}
 
-/* ── Layout ── */
-#app{display:none;min-height:100vh;display:none}
+/* Layout */
+#app{display:none;min-height:100vh}
 .sidebar{width:220px;background:#1b3a5c;min-height:100vh;position:fixed;top:0;left:0;display:flex;flex-direction:column}
 .sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
 .sidebar-logo h2{color:#fff;font-size:17px;margin-bottom:2px}
@@ -38,11 +38,11 @@ nav{flex:1;padding:12px 0}
 .user-info strong{color:#fff;display:block}
 .logout-btn{width:100%;padding:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:7px;color:#fff;font-size:13px;cursor:pointer;font-family:inherit}
 .logout-btn:hover{background:rgba(255,255,255,.2)}
-
 .main{margin-left:220px;padding:28px}
 .page-title{font-size:22px;font-weight:700;color:#1b3a5c;margin-bottom:20px}
+.subtitle{font-size:13px;color:#888;font-weight:400;margin-left:8px}
 
-/* ── Cards / Tables ── */
+/* Panels */
 .panel{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px}
 .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
 .panel-header h3{font-size:16px;color:#1b3a5c}
@@ -56,18 +56,25 @@ nav{flex:1;padding:12px 0}
 .btn-danger:hover{background:#c0392b}
 .btn-secondary{background:#e9ecef;color:#444}
 .btn-secondary:hover{background:#dee2e6}
+.btn-link{background:none;color:#1b3a5c;padding:4px 8px;text-decoration:underline}
 .btn-sm{padding:5px 10px;font-size:13px}
+
+/* Tables */
 table{width:100%;border-collapse:collapse}
 th{background:#f8f9fa;padding:10px 12px;text-align:left;font-size:13px;color:#666;font-weight:600;border-bottom:2px solid #e9ecef}
 td{padding:10px 12px;font-size:14px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#fafcff}
-.badge{display:inline-block;padding:3px 8px;border-radius:12px;font-size:12px;font-weight:600;background:#e8f0fe;color:#1b3a5c}
-.empty-row td{text-align:center;color:#aaa;padding:24px}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.badge-volunteer{background:#e8f9e9;color:#1a7f37}
+.badge-training{background:#e8f0fe;color:#1b3a5c}
+.badge-count{background:#f4f4f4;color:#555}
+.empty-row td{text-align:center;color:#aaa;padding:28px}
 
-/* ── Modal ── */
+/* Modal */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:#fff;border-radius:14px;width:100%;max-width:480px;box-shadow:0 20px 50px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 50px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto}
+.modal-lg{max-width:760px}
 .modal-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between}
 .modal-header h3{font-size:17px;color:#1b3a5c}
 .modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#999;line-height:1}
@@ -75,38 +82,41 @@ tr:hover td{background:#fafcff}
 .modal-footer{padding:12px 24px 20px;display:flex;justify-content:flex-end;gap:10px}
 .field{margin-bottom:16px}
 .field label{display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:5px}
-.field input,.field select,.field textarea{width:100%;padding:10px 13px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;transition:border-color .2s}
-.field input:focus,.field select:focus{outline:none;border-color:#1b3a5c}
-.field-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;transition:border-color .2s;background:#fff}
+.field textarea{resize:vertical;min-height:72px;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#1b3a5c}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .field-note{font-size:12px;color:#888;margin-top:4px}
+.section-title{font-size:13px;font-weight:700;color:#1b3a5c;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid #eee}
+.section-title:first-child{margin-top:0}
 
-/* ── Toast ── */
+/* Toast */
 #toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
 .toast-item{padding:12px 18px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .25s ease;max-width:320px}
 .toast-item.success{background:#e8f9e9;color:#1a7f37;border:1px solid #b7dfb9}
 .toast-item.error{background:#fff0f0;color:#c62828;border:1px solid #ffcdd2}
 @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
 
-/* ── Enroll search ── */
-.search-box{position:relative}
-.search-box input{padding-right:80px}
-.search-btn{position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:6px 12px;background:#1b3a5c;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer}
-.enroll-select{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.enroll-select select{flex:1;min-width:200px;padding:10px 13px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit}
-.enroll-select select:focus{outline:none;border-color:#1b3a5c}
-
-/* ── Import area ── */
-.import-area{border:2px dashed #c0cfe0;border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s}
+/* Import */
+.import-area{border:2px dashed #c0cfe0;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s}
 .import-area:hover{border-color:#1b3a5c}
 .import-area p{color:#888;font-size:14px;margin-top:8px}
 .import-format{background:#f8f9fa;border-radius:8px;padding:12px;margin-top:12px;font-size:12px;color:#555}
-.import-format pre{margin-top:4px;font-family:Consolas,monospace;color:#1b3a5c}
+.import-format pre{margin-top:4px;font-family:Consolas,monospace;color:#1b3a5c;white-space:pre-wrap}
 
-/* ── Template ── */
-.template-preview{border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;margin-top:16px;max-height:500px}
-.template-preview embed{width:100%;height:500px}
+/* Template preview */
+.template-card{background:#f8f9fa;border-radius:10px;padding:16px;margin-bottom:16px}
+.template-card h4{font-size:14px;color:#1b3a5c;margin-bottom:10px}
+.template-preview{border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-top:8px;height:260px}
+.template-preview embed{width:100%;height:100%}
 
-@media(max-width:768px){.sidebar{width:100%;min-height:auto;position:static;flex-direction:row;flex-wrap:wrap}.main{margin-left:0;padding:16px}.field-row{grid-template-columns:1fr}}
+.breadcrumb{font-size:14px;color:#666;margin-bottom:14px}
+.breadcrumb a{color:#1b3a5c;text-decoration:none;cursor:pointer}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb span{color:#aaa;margin:0 6px}
+
+@media(max-width:768px){.sidebar{width:100%;min-height:auto;position:static}.main{margin-left:0;padding:16px}.field-row-3,.field-row-2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -131,9 +141,7 @@ tr:hover td{background:#fafcff}
       <p>科學教育中心</p>
     </div>
     <nav>
-      <button class="nav-item active" data-tab="activities"><span class="icon">📋</span>活動管理</button>
-      <button class="nav-item" data-tab="students"><span class="icon">👥</span>學生名單</button>
-      <button class="nav-item" data-tab="enrollments"><span class="icon">✅</span>報名管理</button>
+      <button class="nav-item active" data-tab="certificates"><span class="icon">📜</span>證書管理</button>
       <button class="nav-item" data-tab="template"><span class="icon">📄</span>模板設定</button>
       <button class="nav-item" data-tab="password"><span class="icon">🔒</span>修改密碼</button>
     </nav>
@@ -145,101 +153,76 @@ tr:hover td{background:#fafcff}
 
   <main class="main">
 
-    <!-- Activities Tab -->
-    <div id="tab-activities" class="tab-content">
-      <div class="page-title">活動管理</div>
-      <div class="panel">
-        <div class="panel-header">
-          <h3>活動清單</h3>
-          <button class="btn btn-primary" id="addActivityBtn">＋ 新增活動</button>
-        </div>
-        <table id="actTable">
-          <thead><tr><th>活動名稱</th><th>日期</th><th>時數</th><th>角色</th><th>文號</th><th>操作</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Students Tab -->
-    <div id="tab-students" class="tab-content hidden">
-      <div class="page-title">學生名單</div>
-      <div class="panel">
-        <div class="panel-header">
-          <h3>學生資料</h3>
-          <div class="btn-group">
-            <button class="btn btn-secondary" id="importStudentBtn">⬆ 匯入 CSV</button>
-            <button class="btn btn-primary" id="addStudentBtn">＋ 新增學生</button>
+    <!-- 證書管理 Tab -->
+    <div id="tab-certificates" class="tab-content">
+      <!-- Level 1: Activity list -->
+      <div id="activityListView">
+        <div class="page-title">證書管理 <span class="subtitle">建立活動後，匯入該活動的學生名單即可自動產生證書</span></div>
+        <div class="panel">
+          <div class="panel-header">
+            <h3>活動清單</h3>
+            <button class="btn btn-primary" id="addActivityBtn">＋ 新增活動</button>
           </div>
+          <table id="actTable">
+            <thead><tr><th>類型</th><th>活動名稱</th><th>日期</th><th>文號前綴</th><th>證書數</th><th>操作</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
-        <div class="import-format" id="studentImportHint" style="margin-bottom:16px;display:none">
-          <strong>CSV 格式（第一行為標題）：</strong>
-          <pre>學號,姓名,學校
-311201,王小明,國立鳳山高級中學
-311202,李小花,國立鳳山高級中學</pre>
-        </div>
-        <table id="stuTable">
-          <thead><tr><th>學號</th><th>姓名</th><th>學校</th><th>操作</th></tr></thead>
-          <tbody></tbody>
-        </table>
       </div>
-    </div>
 
-    <!-- Enrollments Tab -->
-    <div id="tab-enrollments" class="tab-content hidden">
-      <div class="page-title">報名管理</div>
-      <div class="panel">
-        <div class="panel-header"><h3>選擇活動</h3></div>
-        <div class="enroll-select">
-          <select id="enrollActSel"><option value="">— 請選擇活動 —</option></select>
-          <button class="btn btn-secondary" id="importEnrollBtn">⬆ 批次匯入 CSV</button>
+      <!-- Level 2: Certificate list (within an activity) -->
+      <div id="certListView" class="hidden">
+        <div class="breadcrumb">
+          <a id="bcBack">← 返回活動清單</a>
         </div>
-        <div class="import-format" id="enrollImportHint" style="margin-bottom:16px;display:none">
-          <strong>CSV 格式：</strong>
-          <pre>學號,活動名稱
-311201,高雄科學日暨國立高雄大學 USR 成果展
-311202,高雄科學日暨國立高雄大學 USR 成果展</pre>
-        </div>
-      </div>
-      <div class="panel" id="enrollPanel" style="display:none">
-        <div class="panel-header">
-          <h3 id="enrollPanelTitle">已報名學生</h3>
-          <div class="btn-group">
-            <div class="search-box">
-              <input type="text" id="addEnrollId" placeholder="輸入學號新增" style="width:220px">
-              <button class="search-btn" id="addEnrollBtn">新增</button>
+        <div class="page-title" id="certPageTitle"></div>
+        <div class="panel">
+          <div class="panel-header">
+            <h3>已建立的證書</h3>
+            <div class="btn-group">
+              <button class="btn btn-secondary" id="importCertBtn">⬆ 匯入 CSV</button>
+              <button class="btn btn-primary" id="addCertBtn">＋ 新增單筆</button>
             </div>
           </div>
+          <table id="certTable">
+            <thead><tr><th>流水編號</th><th>文號</th><th>學號</th><th>姓名</th><th>學校</th><th>操作</th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
-        <table id="enrollTable">
-          <thead><tr><th>學號</th><th>姓名</th><th>學校</th><th>操作</th></tr></thead>
-          <tbody></tbody>
-        </table>
       </div>
     </div>
 
-    <!-- Template Tab -->
+    <!-- 模板設定 Tab -->
     <div id="tab-template" class="tab-content hidden">
-      <div class="page-title">模板設定</div>
+      <div class="page-title">模板設定 <span class="subtitle">上傳空白 PDF 模板（不含學生姓名等動態資料）</span></div>
       <div class="panel">
-        <div class="panel-header"><h3>上傳新模板</h3></div>
-        <p style="color:#666;font-size:14px;margin-bottom:16px">上傳後將取代目前的證明書模板，請確保為空白版本（不含學生姓名等動態資料）。</p>
-        <label class="import-area" id="templateDrop">
-          <input type="file" id="templateFile" accept=".pdf" style="display:none">
-          <div style="font-size:36px">📄</div>
-          <p>點擊或拖曳上傳 PDF 模板</p>
-        </label>
-        <div class="template-preview" id="templatePreview">
-          <embed src="/template.pdf#toolbar=0" type="application/pdf">
+        <div class="template-card">
+          <h4>志工證明模板 <span style="font-weight:400;color:#888;font-size:12px">(volunteer.pdf)</span></h4>
+          <label class="import-area">
+            <input type="file" data-tpl="volunteer" accept=".pdf" style="display:none">
+            <div style="font-size:30px">📄</div>
+            <p>點擊或拖曳上傳新的「志工證明」PDF</p>
+          </label>
+          <div class="template-preview"><embed src="/volunteer.pdf#toolbar=0" type="application/pdf" id="previewVolunteer"></div>
+        </div>
+        <div class="template-card">
+          <h4>研習證明模板 <span style="font-weight:400;color:#888;font-size:12px">(training.pdf)</span></h4>
+          <label class="import-area">
+            <input type="file" data-tpl="training" accept=".pdf" style="display:none">
+            <div style="font-size:30px">📄</div>
+            <p>點擊或拖曳上傳新的「研習證明」PDF</p>
+          </label>
+          <div class="template-preview"><embed src="/training.pdf#toolbar=0" type="application/pdf" id="previewTraining"></div>
         </div>
       </div>
     </div>
 
-    <!-- Password Tab -->
+    <!-- 修改密碼 Tab -->
     <div id="tab-password" class="tab-content hidden">
       <div class="page-title">修改密碼</div>
-      <div class="panel" style="max-width:400px">
+      <div class="panel" style="max-width:420px">
         <div class="field"><label>目前密碼</label><input type="password" id="curPass"></div>
-        <div class="field"><label>新密碼</label><input type="password" id="newPass"></div>
+        <div class="field"><label>新密碼（至少 6 字元）</label><input type="password" id="newPass"></div>
         <div class="field"><label>確認新密碼</label><input type="password" id="confirmPass"></div>
         <button class="btn btn-primary" id="changePassBtn">儲存新密碼</button>
       </div>
@@ -250,23 +233,78 @@ tr:hover td{background:#fafcff}
 
 <!-- Activity Modal -->
 <div class="overlay hidden" id="actModal">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="modal-header">
       <h3 id="actModalTitle">新增活動</h3>
       <button class="modal-close" data-close="actModal">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field"><label>活動名稱</label><input id="actName" placeholder="例：高雄科學日暨國立高雄大學 USR 成果展"></div>
-      <div class="field-row">
-        <div class="field"><label>民國年份</label><input id="actYear" type="number" placeholder="114" min="100" max="200"></div>
-        <div class="field"><label>月</label><input id="actMonth" type="number" placeholder="12" min="1" max="12"></div>
-        <div class="field"><label>日</label><input id="actDay" type="number" placeholder="13" min="1" max="31"></div>
+      <div class="section-title">① 模板類型</div>
+      <div class="field">
+        <label>證書類型</label>
+        <select id="actTemplateType">
+          <option value="volunteer">志工證明</option>
+          <option value="training">研習證明</option>
+        </select>
       </div>
-      <div class="field-row">
-        <div class="field"><label>服務時數</label><input id="actHours" type="number" placeholder="4" step="0.5" min="0.5"></div>
-        <div class="field" style="grid-column:span 2"><label>服務角色</label><input id="actRole" placeholder="攤位志工"></div>
+
+      <div class="section-title">② 活動資訊</div>
+      <div class="field">
+        <label>活動名稱</label>
+        <input id="actName" placeholder="例：高雄科學日暨國立高雄大學 USR 成果展">
       </div>
-      <div class="field"><label>文號（選填）</label><input id="actDocNum" placeholder="11412130197"></div>
+
+      <div class="field">
+        <label>開始日期（民國）</label>
+        <div class="field-row-3">
+          <input id="actStartYear" type="number" placeholder="年 (114)" min="100" max="200">
+          <input id="actStartMonth" type="number" placeholder="月 (12)" min="1" max="12">
+          <input id="actStartDay" type="number" placeholder="日 (13)" min="1" max="31">
+        </div>
+      </div>
+      <div class="field">
+        <label>結束日期（民國，選填；若與開始日相同可留空即為單日）</label>
+        <div class="field-row-3">
+          <input id="actEndYear" type="number" placeholder="年" min="100" max="200">
+          <input id="actEndMonth" type="number" placeholder="月" min="1" max="12">
+          <input id="actEndDay" type="number" placeholder="日" min="1" max="31">
+        </div>
+      </div>
+
+      <!-- Volunteer-specific -->
+      <div id="volFields">
+        <div class="field-row-2">
+          <div class="field"><label>職位</label><input id="actRole" placeholder="攤位志工"></div>
+          <div class="field"><label>時數（選填）</label><input id="actHours" type="number" step="0.5" min="0" placeholder="4"></div>
+        </div>
+      </div>
+
+      <!-- Training-specific -->
+      <div id="trainFields" class="hidden">
+        <div class="field">
+          <label>主辦單位</label>
+          <input id="actOrganizer" placeholder="中華民國物理教育學會">
+        </div>
+        <div class="field">
+          <label>研習內容（可多行，描述參與的項目）</label>
+          <textarea id="actContent" placeholder="參與 Phyphox 在科學測量之應用、Tracker 在運動學之應用、..."></textarea>
+        </div>
+      </div>
+
+      <div class="section-title">③ 文號與發證日期</div>
+      <div class="field">
+        <label>文號前綴</label>
+        <input id="actDocPrefix" placeholder="科教謝字">
+        <div class="field-note">每位學生會以「前綴 + 流水編號」作為其唯一文號。例：科教謝字第001號</div>
+      </div>
+      <div class="field">
+        <label>發證日期（民國；證書底部顯示的日期）</label>
+        <div class="field-row-3">
+          <input id="actIssueYear" type="number" placeholder="年" min="100" max="200">
+          <input id="actIssueMonth" type="number" placeholder="月" min="1" max="12">
+          <input id="actIssueDay" type="number" placeholder="日" min="1" max="31">
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" data-close="actModal">取消</button>
@@ -275,21 +313,24 @@ tr:hover td{background:#fafcff}
   </div>
 </div>
 
-<!-- Student Modal -->
-<div class="overlay hidden" id="stuModal">
+<!-- Certificate Modal -->
+<div class="overlay hidden" id="certModal">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="stuModalTitle">新增學生</h3>
-      <button class="modal-close" data-close="stuModal">✕</button>
+      <h3 id="certModalTitle">新增證書</h3>
+      <button class="modal-close" data-close="certModal">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field"><label>學號</label><input id="stuId" placeholder="311201"></div>
-      <div class="field"><label>姓名</label><input id="stuName" placeholder="王小明"></div>
-      <div class="field"><label>學校名稱</label><input id="stuSchool" placeholder="國立鳳山高級中學"></div>
+      <div class="field"><label>學號</label><input id="certSid" placeholder="311201"></div>
+      <div class="field"><label>姓名</label><input id="certName" placeholder="王小明"></div>
+      <div class="field"><label>學校</label><input id="certSchool" placeholder="國立鳳山高級中學"></div>
+      <div class="field"><label>流水編號</label><input id="certSerial" placeholder="001">
+        <div class="field-note">將與活動的文號前綴組合為完整文號</div>
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" data-close="stuModal">取消</button>
-      <button class="btn btn-primary" id="saveStuBtn">儲存</button>
+      <button class="btn btn-secondary" data-close="certModal">取消</button>
+      <button class="btn btn-primary" id="saveCertBtn">儲存</button>
     </div>
   </div>
 </div>
@@ -298,14 +339,17 @@ tr:hover td{background:#fafcff}
 <div class="overlay hidden" id="csvModal">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="csvModalTitle">匯入 CSV</h3>
+      <h3>匯入學生名單 CSV</h3>
       <button class="modal-close" data-close="csvModal">✕</button>
     </div>
     <div class="modal-body">
-      <div id="csvFormatHint"></div>
-      <label class="import-area" id="csvDrop" style="margin-top:12px">
+      <div class="import-format"><strong>CSV 格式（第一行為標題，流水編號可省略，系統會自動遞增）：</strong>
+<pre>學號,姓名,學校,流水編號
+311201,王小明,國立鳳山高級中學,001
+311202,李小花,國立鳳山高級中學,002</pre></div>
+      <label class="import-area" style="margin-top:12px">
         <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
-        <div style="font-size:36px">📊</div>
+        <div style="font-size:30px">📊</div>
         <p>點擊選擇或拖曳 CSV 檔案</p>
       </label>
       <p id="csvFileName" style="text-align:center;font-size:13px;color:#1b3a5c;margin-top:8px"></p>
@@ -317,7 +361,6 @@ tr:hover td{background:#fafcff}
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
 <script>
@@ -337,7 +380,6 @@ async function api(method, path, body, isForm) {
   return res;
 }
 
-// ── Bootstrap ────────────────────────────────────────────────────
 if (TOKEN) showApp();
 
 document.getElementById('loginBtn').addEventListener('click', doLogin);
@@ -349,10 +391,8 @@ async function doLogin() {
   const password = document.getElementById('loginPass').value;
   const errEl = document.getElementById('loginError');
   errEl.classList.add('hidden');
-
   const res = await fetch('/api/admin/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
   });
   const data = await res.json();
@@ -363,13 +403,12 @@ async function doLogin() {
 
 function showApp() {
   document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
+  document.getElementById('app').style.display = 'block';
   document.getElementById('currentUser').textContent = USERNAME || '';
   loadActivities();
-  loadStudents();
 }
 
-// ── Tabs ─────────────────────────────────────────────────────────
+// Tabs
 document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -377,11 +416,11 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     btn.classList.add('active');
     const tab = document.getElementById('tab-' + btn.dataset.tab);
     if (tab) tab.classList.remove('hidden');
-    if (btn.dataset.tab === 'enrollments') populateEnrollActSel();
+    if (btn.dataset.tab === 'certificates') showActivityList();
   });
 });
 
-// ── Toast ─────────────────────────────────────────────────────────
+// Toast
 function toast(msg, type='success') {
   const t = document.getElementById('toast');
   const el = document.createElement('div');
@@ -391,7 +430,7 @@ function toast(msg, type='success') {
   setTimeout(() => el.remove(), 3500);
 }
 
-// ── Modals ─────────────────────────────────────────────────────────
+// Modal close handlers
 document.querySelectorAll('[data-close]').forEach(b => {
   b.addEventListener('click', () => document.getElementById(b.dataset.close).classList.add('hidden'));
 });
@@ -399,9 +438,25 @@ document.querySelectorAll('.overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) o.classList.add('hidden'); });
 });
 
+// ── Views ─────────────────────────────────────────────────────────
+function showActivityList() {
+  document.getElementById('activityListView').classList.remove('hidden');
+  document.getElementById('certListView').classList.add('hidden');
+  loadActivities();
+}
+function showCertList(activityId) {
+  currentActivityId = activityId;
+  document.getElementById('activityListView').classList.add('hidden');
+  document.getElementById('certListView').classList.remove('hidden');
+  loadCertificates();
+}
+document.getElementById('bcBack').addEventListener('click', showActivityList);
+
 // ── Activities ────────────────────────────────────────────────────
 let activities = [];
 let editActId = null;
+let currentActivityId = null;
+let currentActivity = null;
 
 async function loadActivities() {
   const res = await api('GET', '/api/admin/activities');
@@ -409,60 +464,108 @@ async function loadActivities() {
   renderActTable();
 }
 
+function fmtDateRange(a) {
+  const s = `${a.start_year}/${String(a.start_month).padStart(2,'0')}/${String(a.start_day).padStart(2,'0')}`;
+  if (!a.end_year) return s;
+  const e = `${a.end_year}/${String(a.end_month).padStart(2,'0')}/${String(a.end_day).padStart(2,'0')}`;
+  return s === e ? s : `${s} ~ ${e}`;
+}
+
 function renderActTable() {
   const tbody = document.querySelector('#actTable tbody');
   if (!activities.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">尚無活動，請點擊「新增活動」</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">尚無活動，點擊「＋ 新增活動」開始建立</td></tr>';
     return;
   }
   tbody.innerHTML = activities.map(a => `
     <tr>
-      <td>${a.name}</td>
-      <td>民國 ${a.year} 年 ${a.month} 月 ${a.day} 日</td>
-      <td><span class="badge">${a.hours} 小時</span></td>
-      <td>${a.role}</td>
-      <td style="font-size:12px;color:#888">${a.doc_number || '—'}</td>
+      <td><span class="badge ${a.template_type === 'volunteer' ? 'badge-volunteer' : 'badge-training'}">${a.template_type === 'volunteer' ? '志工' : '研習'}</span></td>
+      <td>${escapeHtml(a.name)}</td>
+      <td style="font-size:13px;color:#555">${fmtDateRange(a)}</td>
+      <td style="font-size:13px;color:#555">${escapeHtml(a.doc_prefix)}</td>
+      <td><span class="badge badge-count">${a.cert_count} 張</span></td>
       <td>
+        <button class="btn btn-primary btn-sm" onclick="showCertList(${a.id})">管理證書</button>
         <button class="btn btn-secondary btn-sm" onclick="openEditAct(${a.id})">編輯</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteAct(${a.id})" style="margin-left:4px">刪除</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAct(${a.id})">刪除</button>
       </td>
     </tr>`).join('');
 }
 
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fillActModal(a) {
+  document.getElementById('actTemplateType').value = a?.template_type || 'volunteer';
+  document.getElementById('actName').value         = a?.name || '';
+  document.getElementById('actStartYear').value    = a?.start_year || '';
+  document.getElementById('actStartMonth').value   = a?.start_month || '';
+  document.getElementById('actStartDay').value     = a?.start_day || '';
+  document.getElementById('actEndYear').value      = a?.end_year || '';
+  document.getElementById('actEndMonth').value     = a?.end_month || '';
+  document.getElementById('actEndDay').value       = a?.end_day || '';
+  document.getElementById('actRole').value         = a?.role || '';
+  document.getElementById('actHours').value        = a?.hours ?? '';
+  document.getElementById('actOrganizer').value    = a?.organizer || '';
+  document.getElementById('actContent').value      = a?.content || '';
+  document.getElementById('actDocPrefix').value    = a?.doc_prefix || '';
+  document.getElementById('actIssueYear').value    = a?.issue_year || '';
+  document.getElementById('actIssueMonth').value   = a?.issue_month || '';
+  document.getElementById('actIssueDay').value     = a?.issue_day || '';
+  toggleTplFields();
+}
+
+function toggleTplFields() {
+  const t = document.getElementById('actTemplateType').value;
+  document.getElementById('volFields').classList.toggle('hidden', t !== 'volunteer');
+  document.getElementById('trainFields').classList.toggle('hidden', t !== 'training');
+  // Suggest default doc prefix if empty
+  const prefEl = document.getElementById('actDocPrefix');
+  if (!prefEl.value.trim()) {
+    prefEl.value = t === 'volunteer' ? '科教謝字' : '物教證字';
+  }
+}
+document.getElementById('actTemplateType').addEventListener('change', toggleTplFields);
+
 document.getElementById('addActivityBtn').addEventListener('click', () => {
   editActId = null;
   document.getElementById('actModalTitle').textContent = '新增活動';
-  ['actName','actYear','actMonth','actDay','actHours','actRole','actDocNum'].forEach(id => {
-    document.getElementById(id).value = id === 'actRole' ? '攤位志工' : '';
-  });
+  fillActModal({ template_type: 'volunteer', role: '攤位志工', doc_prefix: '科教謝字', organizer: '中華民國物理教育學會' });
   document.getElementById('actModal').classList.remove('hidden');
 });
 
-function openEditAct(id) {
+async function openEditAct(id) {
   editActId = id;
-  const a = activities.find(x => x.id === id);
+  const res = await api('GET', `/api/admin/activities/${id}`);
+  const a = await res.json();
   document.getElementById('actModalTitle').textContent = '編輯活動';
-  document.getElementById('actName').value    = a.name;
-  document.getElementById('actYear').value    = a.year;
-  document.getElementById('actMonth').value   = a.month;
-  document.getElementById('actDay').value     = a.day;
-  document.getElementById('actHours').value   = a.hours;
-  document.getElementById('actRole').value    = a.role;
-  document.getElementById('actDocNum').value  = a.doc_number || '';
+  fillActModal(a);
   document.getElementById('actModal').classList.remove('hidden');
 }
 
 document.getElementById('saveActivityBtn').addEventListener('click', async () => {
+  const tpl = document.getElementById('actTemplateType').value;
   const body = {
-    name: document.getElementById('actName').value.trim(),
-    year: +document.getElementById('actYear').value,
-    month: +document.getElementById('actMonth').value,
-    day: +document.getElementById('actDay').value,
-    hours: +document.getElementById('actHours').value,
-    role: document.getElementById('actRole').value.trim() || '攤位志工',
-    doc_number: document.getElementById('actDocNum').value.trim() || null
+    template_type: tpl,
+    name:        document.getElementById('actName').value.trim(),
+    start_year:  +document.getElementById('actStartYear').value,
+    start_month: +document.getElementById('actStartMonth').value,
+    start_day:   +document.getElementById('actStartDay').value,
+    end_year:    +document.getElementById('actEndYear').value   || null,
+    end_month:   +document.getElementById('actEndMonth').value  || null,
+    end_day:     +document.getElementById('actEndDay').value    || null,
+    role:        tpl === 'volunteer' ? document.getElementById('actRole').value.trim() : null,
+    hours:       tpl === 'volunteer' ? (document.getElementById('actHours').value === '' ? null : +document.getElementById('actHours').value) : null,
+    organizer:   tpl === 'training' ? document.getElementById('actOrganizer').value.trim() : null,
+    content:     tpl === 'training' ? document.getElementById('actContent').value.trim() : null,
+    doc_prefix:  document.getElementById('actDocPrefix').value.trim(),
+    issue_year:  +document.getElementById('actIssueYear').value,
+    issue_month: +document.getElementById('actIssueMonth').value,
+    issue_day:   +document.getElementById('actIssueDay').value
   };
-  if (!body.name || !body.year || !body.month || !body.day || !body.hours) {
+  if (!body.name || !body.start_year || !body.start_month || !body.start_day
+      || !body.issue_year || !body.issue_month || !body.issue_day || !body.doc_prefix) {
     toast('請填寫所有必填欄位', 'error'); return;
   }
   const res = editActId
@@ -473,233 +576,158 @@ document.getElementById('saveActivityBtn').addEventListener('click', async () =>
     document.getElementById('actModal').classList.add('hidden');
     loadActivities();
   } else {
-    const d = await res.json(); toast(d.error, 'error');
+    const d = await res.json(); toast(d.error || '儲存失敗', 'error');
   }
 });
 
 async function deleteAct(id) {
-  if (!confirm('確定要刪除此活動？相關報名紀錄也會一併刪除。')) return;
+  if (!confirm('確定要刪除此活動？該活動下的所有證書也會一併刪除。')) return;
   await api('DELETE', `/api/admin/activities/${id}`);
   toast('活動已刪除');
   loadActivities();
 }
 
-// ── Students ──────────────────────────────────────────────────────
-let students = [];
-let editStuId = null;
+// ── Certificates ──────────────────────────────────────────────────
+let certificates = [];
+let editCertId = null;
 
-async function loadStudents() {
-  const res = await api('GET', '/api/admin/students');
-  students = await res.json();
-  renderStuTable();
+async function loadCertificates() {
+  const actRes = await api('GET', `/api/admin/activities/${currentActivityId}`);
+  currentActivity = await actRes.json();
+  const title = `${currentActivity.template_type === 'volunteer' ? '志工' : '研習'}　${currentActivity.name}`;
+  document.getElementById('certPageTitle').textContent = title;
+  const res = await api('GET', `/api/admin/activities/${currentActivityId}/certificates`);
+  certificates = await res.json();
+  renderCertTable();
 }
 
-function renderStuTable() {
-  const tbody = document.querySelector('#stuTable tbody');
-  if (!students.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">尚無學生，請新增或匯入 CSV</td></tr>';
+function renderCertTable() {
+  const tbody = document.querySelector('#certTable tbody');
+  if (!certificates.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">尚無證書，點擊「＋ 新增單筆」或「⬆ 匯入 CSV」開始</td></tr>';
     return;
   }
-  tbody.innerHTML = students.map(s => `
+  tbody.innerHTML = certificates.map(c => `
     <tr>
-      <td>${s.student_id}</td>
-      <td>${s.name}</td>
-      <td>${s.school}</td>
+      <td style="font-weight:600">${escapeHtml(c.serial_number)}</td>
+      <td style="font-size:13px;color:#555">${escapeHtml(currentActivity.doc_prefix)}第${escapeHtml(c.serial_number)}號</td>
+      <td>${escapeHtml(c.student_id)}</td>
+      <td>${escapeHtml(c.name)}</td>
+      <td>${escapeHtml(c.school)}</td>
       <td>
-        <button class="btn btn-secondary btn-sm" onclick="openEditStu('${s.student_id}')">編輯</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteStu('${s.student_id}')" style="margin-left:4px">刪除</button>
+        <button class="btn btn-secondary btn-sm" onclick="openEditCert(${c.id})">編輯</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCert(${c.id})">刪除</button>
       </td>
     </tr>`).join('');
 }
 
-document.getElementById('addStudentBtn').addEventListener('click', () => {
-  editStuId = null;
-  document.getElementById('stuModalTitle').textContent = '新增學生';
-  ['stuId','stuName','stuSchool'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('stuId').disabled = false;
-  document.getElementById('stuModal').classList.remove('hidden');
+document.getElementById('addCertBtn').addEventListener('click', () => {
+  editCertId = null;
+  document.getElementById('certModalTitle').textContent = '新增證書';
+  document.getElementById('certSid').value = '';
+  document.getElementById('certName').value = '';
+  document.getElementById('certSchool').value = '';
+  // Auto-suggest next serial
+  const maxSerial = certificates.reduce((m, c) => Math.max(m, parseInt(c.serial_number, 10) || 0), 0);
+  document.getElementById('certSerial').value = String(maxSerial + 1).padStart(3, '0');
+  document.getElementById('certModal').classList.remove('hidden');
 });
 
-function openEditStu(id) {
-  editStuId = id;
-  const s = students.find(x => x.student_id === id);
-  document.getElementById('stuModalTitle').textContent = '編輯學生';
-  document.getElementById('stuId').value = s.student_id;
-  document.getElementById('stuId').disabled = true;
-  document.getElementById('stuName').value   = s.name;
-  document.getElementById('stuSchool').value = s.school;
-  document.getElementById('stuModal').classList.remove('hidden');
+function openEditCert(id) {
+  editCertId = id;
+  const c = certificates.find(x => x.id === id);
+  document.getElementById('certModalTitle').textContent = '編輯證書';
+  document.getElementById('certSid').value    = c.student_id;
+  document.getElementById('certName').value   = c.name;
+  document.getElementById('certSchool').value = c.school;
+  document.getElementById('certSerial').value = c.serial_number;
+  document.getElementById('certModal').classList.remove('hidden');
 }
 
-document.getElementById('saveStuBtn').addEventListener('click', async () => {
+document.getElementById('saveCertBtn').addEventListener('click', async () => {
   const body = {
-    student_id: document.getElementById('stuId').value.trim(),
-    name: document.getElementById('stuName').value.trim(),
-    school: document.getElementById('stuSchool').value.trim()
+    activity_id: currentActivityId,
+    student_id:  document.getElementById('certSid').value.trim(),
+    name:        document.getElementById('certName').value.trim(),
+    school:      document.getElementById('certSchool').value.trim(),
+    serial_number: document.getElementById('certSerial').value.trim()
   };
-  if (!body.student_id || !body.name || !body.school) { toast('請填寫所有欄位','error'); return; }
-  const res = editStuId
-    ? await api('PUT',  `/api/admin/students/${editStuId}`, body)
-    : await api('POST', '/api/admin/students', body);
+  if (!body.student_id || !body.name || !body.school || !body.serial_number) {
+    toast('請填寫所有欄位', 'error'); return;
+  }
+  const res = editCertId
+    ? await api('PUT',  `/api/admin/certificates/${editCertId}`, body)
+    : await api('POST', '/api/admin/certificates', body);
   if (res.ok) {
-    toast(editStuId ? '學生資料已更新' : '學生已新增');
-    document.getElementById('stuModal').classList.add('hidden');
-    loadStudents();
+    toast(editCertId ? '證書已更新' : '證書已新增');
+    document.getElementById('certModal').classList.add('hidden');
+    loadCertificates();
   } else {
-    const d = await res.json(); toast(d.error, 'error');
+    const d = await res.json(); toast(d.error || '儲存失敗', 'error');
   }
 });
 
-async function deleteStu(id) {
-  if (!confirm(`確定要刪除學號 ${id}？`)) return;
-  await api('DELETE', `/api/admin/students/${id}`);
-  toast('學生已刪除');
-  loadStudents();
+async function deleteCert(id) {
+  if (!confirm('確定要刪除此證書？')) return;
+  await api('DELETE', `/api/admin/certificates/${id}`);
+  toast('證書已刪除');
+  loadCertificates();
 }
 
-// ── CSV Import ─────────────────────────────────────────────────────
-let csvMode = null; // 'students' | 'enrollments'
-
-document.getElementById('importStudentBtn').addEventListener('click', () => {
-  csvMode = 'students';
-  document.getElementById('csvModalTitle').textContent = '匯入學生名單';
-  document.getElementById('csvFormatHint').innerHTML = `
-    <div class="import-format"><strong>CSV 格式（支援中文欄位名）：</strong>
-    <pre>學號,姓名,學校\n311201,王小明,國立鳳山高級中學</pre></div>`;
+// ── CSV Import (certificates) ──────────────────────────────────────
+document.getElementById('importCertBtn').addEventListener('click', () => {
   document.getElementById('csvFile').value = '';
   document.getElementById('csvFileName').textContent = '';
   document.getElementById('csvModal').classList.remove('hidden');
 });
-
-document.getElementById('importEnrollBtn').addEventListener('click', () => {
-  csvMode = 'enrollments';
-  document.getElementById('csvModalTitle').textContent = '批次匯入報名';
-  document.getElementById('csvFormatHint').innerHTML = `
-    <div class="import-format"><strong>CSV 格式：</strong>
-    <pre>學號,活動名稱\n311201,高雄科學日暨國立高雄大學 USR 成果展</pre></div>`;
-  document.getElementById('csvFile').value = '';
-  document.getElementById('csvFileName').textContent = '';
-  document.getElementById('csvModal').classList.remove('hidden');
-});
-
 document.getElementById('csvFile').addEventListener('change', e => {
   const f = e.target.files[0];
   if (f) document.getElementById('csvFileName').textContent = `已選擇：${f.name}`;
 });
-
 document.getElementById('uploadCsvBtn').addEventListener('click', async () => {
   const file = document.getElementById('csvFile').files[0];
-  if (!file) { toast('請先選擇 CSV 檔案','error'); return; }
+  if (!file) { toast('請先選擇 CSV 檔案', 'error'); return; }
   const form = new FormData();
   form.append('file', file);
-  const url = csvMode === 'students' ? '/api/admin/students/import' : '/api/admin/enrollments/import';
-  const res = await api('POST', url, form, true);
+  const res = await api('POST', `/api/admin/activities/${currentActivityId}/certificates/import`, form, true);
   const data = await res.json();
   if (res.ok) {
     toast(`匯入完成：新增 ${data.inserted} 筆，略過 ${data.skipped} 筆`);
     document.getElementById('csvModal').classList.add('hidden');
-    if (csvMode === 'students') loadStudents();
-    else loadEnrollments();
+    loadCertificates();
   } else {
-    toast(data.error, 'error');
+    toast(data.error || '匯入失敗', 'error');
   }
 });
 
-// ── Enrollments ───────────────────────────────────────────────────
-let enrollActId = null;
-
-function populateEnrollActSel() {
-  const sel = document.getElementById('enrollActSel');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— 請選擇活動 —</option>';
-  activities.forEach(a => {
-    const o = document.createElement('option');
-    o.value = a.id;
-    o.textContent = `${a.name}（民國${a.year}年${a.month}月${a.day}日）`;
-    sel.appendChild(o);
+// ── Template upload ───────────────────────────────────────────────
+document.querySelectorAll('#tab-template input[type="file"]').forEach(inp => {
+  const label = inp.closest('.import-area');
+  label.addEventListener('click', e => { if (e.target !== inp) { /* label triggers click itself */ } });
+  inp.addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const type = inp.dataset.tpl;
+    const form = new FormData();
+    form.append('template', file);
+    const res = await api('POST', `/api/admin/template/${type}`, form, true);
+    if (res.ok) {
+      toast(`${type === 'volunteer' ? '志工' : '研習'}模板已更新`);
+      const prev = document.getElementById(`preview${type === 'volunteer' ? 'Volunteer' : 'Training'}`);
+      prev.src = `/${type}.pdf?t=${Date.now()}#toolbar=0`;
+    } else {
+      const d = await res.json(); toast(d.error || '上傳失敗', 'error');
+    }
   });
-  if (cur) sel.value = cur;
-}
-
-document.getElementById('enrollActSel').addEventListener('change', async () => {
-  const id = document.getElementById('enrollActSel').value;
-  enrollActId = id || null;
-  if (!id) { document.getElementById('enrollPanel').style.display = 'none'; return; }
-  const act = activities.find(a => a.id == id);
-  document.getElementById('enrollPanelTitle').textContent = `已報名學生：${act?.name}`;
-  document.getElementById('enrollPanel').style.display = 'block';
-  loadEnrollments();
 });
 
-async function loadEnrollments() {
-  if (!enrollActId) return;
-  const res = await api('GET', `/api/admin/enrollments/${enrollActId}`);
-  const enrolled = await res.json();
-  renderEnrollTable(enrolled);
-}
-
-function renderEnrollTable(rows) {
-  const tbody = document.querySelector('#enrollTable tbody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">尚無報名學生</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(s => `
-    <tr>
-      <td>${s.student_id}</td>
-      <td>${s.name}</td>
-      <td>${s.school}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="removeEnroll('${s.student_id}')">移除</button></td>
-    </tr>`).join('');
-}
-
-document.getElementById('addEnrollBtn').addEventListener('click', async () => {
-  const sid = document.getElementById('addEnrollId').value.trim();
-  if (!sid || !enrollActId) return;
-  const res = await api('POST', '/api/admin/enrollments', { student_id: sid, activity_id: +enrollActId });
-  if (res.ok) {
-    toast('學生已加入報名');
-    document.getElementById('addEnrollId').value = '';
-    loadEnrollments();
-  } else {
-    const d = await res.json(); toast(d.error || '新增失敗', 'error');
-  }
-});
-
-async function removeEnroll(sid) {
-  if (!confirm(`確定移除學號 ${sid}？`)) return;
-  await api('DELETE', '/api/admin/enrollments', { student_id: sid, activity_id: +enrollActId });
-  toast('已移除');
-  loadEnrollments();
-}
-
-// ── Template ───────────────────────────────────────────────────────
-document.getElementById('templateDrop').addEventListener('click', () =>
-  document.getElementById('templateFile').click()
-);
-
-document.getElementById('templateFile').addEventListener('change', async e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const form = new FormData();
-  form.append('template', file);
-  const res = await api('POST', '/api/admin/template', form, true);
-  if (res.ok) {
-    toast('模板已更新');
-    document.getElementById('templatePreview').innerHTML =
-      `<embed src="/template.pdf?t=${Date.now()}#toolbar=0" type="application/pdf">`;
-  } else {
-    const d = await res.json(); toast(d.error, 'error');
-  }
-});
-
-// ── Password ───────────────────────────────────────────────────────
+// ── Password ──────────────────────────────────────────────────────
 document.getElementById('changePassBtn').addEventListener('click', async () => {
   const current = document.getElementById('curPass').value;
   const next    = document.getElementById('newPass').value;
-  const confirm = document.getElementById('confirmPass').value;
-  if (next !== confirm) { toast('兩次密碼不一致','error'); return; }
-  if (next.length < 6)  { toast('新密碼至少 6 個字元','error'); return; }
+  const confirm2 = document.getElementById('confirmPass').value;
+  if (next !== confirm2) { toast('兩次密碼不一致','error'); return; }
+  if (next.length < 6)   { toast('新密碼至少 6 個字元','error'); return; }
   const res = await api('PUT', '/api/admin/password', { current, next });
   if (res.ok) {
     toast('密碼已更新，請重新登入');
